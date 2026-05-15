@@ -314,6 +314,9 @@ const ACCESS_CODES = {
   'ourbox123': 'external'
 };
 
+// 부분뷰어(3PL 외부 공개)에서 숨길 담당자
+const EXTERNAL_HIDDEN_OWNERS = ['김슬기'];
+
 const ROLE_CONFIG = {
   edit: {
     label: '편집 권한: MD/마케팅',
@@ -436,6 +439,9 @@ async function loadData(){
   const data=await res.json();
   if(data.error)throw new Error(data.error);
   state.promotions=data.promotions||[];
+  if(ROLE==='external'){
+    state.promotions=state.promotions.filter(p=>!EXTERNAL_HIDDEN_OWNERS.includes(String(p.owner||'').trim()));
+  }
   state.products=(data.products||[]).map(p=>p.name||p);
   state.priceMap={};
   (data.products||[]).forEach(p=>{if(p.name)state.priceMap[p.name]=p.price||0;});
