@@ -86,6 +86,10 @@ textarea{min-height:80px;resize:vertical}
 .sku-item-remove:hover{background:var(--red);color:#fff}
 .sku-qty-group{flex:0 0 auto;display:flex;gap:4px;align-items:center}
 .sku-qty-display{width:80px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:#fff;font-weight:900;font-size:13px}
+  .sku-qty-display::-webkit-inner-spin-button,
+.sku-qty-display::-webkit-outer-spin-button{
+  opacity:1;
+}
 .sku-qty-btn{border:1px solid var(--brand);border-radius:6px;background:#fff;color:var(--brand);font-weight:900;padding:6px 9px;font-size:11px;white-space:nowrap}
 .sku-qty-btn:hover{background:var(--brand);color:#fff}
 .sku-qty-reset{border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted);padding:6px 8px;font-size:11px;font-weight:700}
@@ -668,11 +672,23 @@ function renderCalendar(){
 
 function renderAll(){renderActionStrip();renderMetrics();renderCalendar()}
 
+  function getRowQty(row){
+  const qtyEl = row.querySelector('.sku-qty-display');
+  return Number(qtyEl?.value ?? qtyEl?.textContent) || 0;
+}
+
+function setRowQty(row, value){
+  const qtyEl = row.querySelector('.sku-qty-display');
+  if(!qtyEl)return;
+  if('value' in qtyEl) qtyEl.value = String(value);
+  else qtyEl.textContent = String(value);
+}
+
   function calcSkuSalesTotal(){
   let total = 0;
 
   document.querySelectorAll('.sku-row').forEach(r=>{
-    const qty = Number(r.querySelector('.sku-qty-display').textContent) || 0;
+    const qty = getRowQty(r);
     const price = Number(r.querySelector('.price-input')?.value) || 0;
     total += qty * price;
   });
@@ -685,7 +701,7 @@ function calcSkuTotal(){
   let total=0;
 
   document.querySelectorAll('.sku-row').forEach(r=>{
-    total += Number(r.querySelector('.sku-qty-display').textContent) || 0;
+    total += getRowQty(r);
   });
 
   document.getElementById('skuTotalDisplay').textContent = num(total);
@@ -815,16 +831,40 @@ priceRow.appendChild(rateEl);
 row.appendChild(priceRow);
 
   // 수량
-  const qtyGroup=el('div','sku-qty-group');
-  const qtyDisp=el('div','sku-qty-display',String(Number(rowData.qty)||0));
-  const btn100=el('button','sku-qty-btn','+100');btn100.type='button';
-  const btn500=el('button','sku-qty-btn','+500');btn500.type='button';
-  const btnReset=el('button','sku-qty-reset','초기화');btnReset.type='button';
-  btn100.onclick=()=>{qtyDisp.textContent=String(Number(qtyDisp.textContent)+100);calcSkuTotal()};
-  btn500.onclick=()=>{qtyDisp.textContent=String(Number(qtyDisp.textContent)+500);calcSkuTotal()};
-  btnReset.onclick=()=>{qtyDisp.textContent='0';calcSkuTotal()};
-  qtyGroup.appendChild(qtyDisp);qtyGroup.appendChild(btn100);qtyGroup.appendChild(btn500);qtyGroup.appendChild(btnReset);
-  row.appendChild(qtyGroup);
+ const qtyGroup=el('div','sku-qty-group');
+
+const qtyDisp=document.createElement('input');
+qtyDisp.className='sku-qty-display';
+qtyDisp.type='number';
+qtyDisp.min='0';
+qtyDisp.step='1';
+qtyDisp.value=String(Number(rowData.qty)||0);
+qtyDisp.oninput=calcSkuTotal;
+
+const btn100=el('button','sku-qty-btn','+100');btn100.type='button';
+const btn500=el('button','sku-qty-btn','+500');btn500.type='button';
+const btnReset=el('button','sku-qty-reset','초기화');btnReset.type='button';
+
+btn100.onclick=()=>{
+  setRowQty(row, getRowQty(row)+100);
+  calcSkuTotal();
+};
+
+btn500.onclick=()=>{
+  setRowQty(row, getRowQty(row)+500);
+  calcSkuTotal();
+};
+
+btnReset.onclick=()=>{
+  setRowQty(row, 0);
+  calcSkuTotal();
+};
+
+qtyGroup.appendChild(qtyDisp);
+qtyGroup.appendChild(btn100);
+qtyGroup.appendChild(btn500);
+qtyGroup.appendChild(btnReset);
+row.appendChild(qtyGroup);
 
   const rmRow=el('button','sku-row-remove','행 삭제');rmRow.type='button';
   rmRow.onclick=()=>{
@@ -858,7 +898,7 @@ function collectSkuRows(){
   document.querySelectorAll('.sku-row').forEach(r=>{
     const items=[];
     r.querySelectorAll('.sku-item-select').forEach(s=>{if(s.value)items.push(s.value)});
-    const qty=Number(r.querySelector('.sku-qty-display').textContent)||0;
+    const qty=getRowQty(r);
     const price=Number(r.querySelector('.price-input')?.value)||0;
     if(items.length&&qty>0)rows.push({items,qty,price});
   });
