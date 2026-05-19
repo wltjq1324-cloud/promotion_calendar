@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
-$accessKey = $env:OURBOX_API_ACCESS_KEY
-$secretKey = $env:OURBOX_API_SECRET_KEY
+$accessKey = ([string]$env:OURBOX_API_ACCESS_KEY).Trim()
+$secretKey = ([string]$env:OURBOX_API_SECRET_KEY).Trim()
 
 if ([string]::IsNullOrWhiteSpace($accessKey) -or [string]::IsNullOrWhiteSpace($secretKey)) {
   throw 'OURBOX_API_ACCESS_KEY and OURBOX_API_SECRET_KEY environment variables are required.'
