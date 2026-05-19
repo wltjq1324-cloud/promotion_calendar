@@ -3,7 +3,7 @@ name: Update OurBox inventory
 on:
   workflow_dispatch:
   schedule:
-    - cron: '10 6 * * *'
+    - cron: '*/30 * * * *'
   push:
     paths:
       - '.github/workflows/update-inventory.yml'
