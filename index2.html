@@ -23,6 +23,7 @@ frame.addEventListener('load', () => {
   const style = doc.createElement('style');
   style.textContent = `
     .inventory-modal{width:min(1180px,100%)}
+    .inventory-actions{display:flex;align-items:center;gap:8px}.inventory-refresh-button{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--brand-dark);font-weight:900;padding:10px 12px;cursor:pointer}.inventory-refresh-button:hover{background:#eef6f8}.inventory-refresh-button:disabled{opacity:.55;cursor:wait}
     .inventory-toolbar{display:grid;grid-template-columns:2fr repeat(3,minmax(130px,1fr));gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);background:#fbfcfe}
     .inventory-toolbar label{gap:5px}
     .inventory-checks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-weight:800}
@@ -30,7 +31,7 @@ frame.addEventListener('load', () => {
     .inventory-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 20px;border-bottom:1px solid var(--line)}
     .inventory-kpi{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px 12px}.inventory-kpi span{display:block;color:var(--muted);font-size:11px;font-weight:800}.inventory-kpi strong{display:block;margin-top:5px;font-size:20px;font-weight:900;color:var(--brand-dark)}
     .inventory-table-wrap{max-height:58vh;overflow:auto}.inventory-table{width:100%;border-collapse:collapse;font-size:12px}
-    .inventory-table th,.inventory-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;white-space:nowrap}.inventory-table th{position:sticky;top:0;z-index:1;background:#eef6f8;color:var(--brand-dark);font-weight:900}
+    .inventory-table th,.inventory-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;white-space:nowrap}.inventory-table th{position:sticky;top:0;z-index:1;background:#eef6f8;color:var(--brand-dark);font-weight:900}.inventory-table th.sortable{cursor:pointer;user-select:none}.inventory-table th.sortable:hover{background:#dff0f4}.inventory-table th.sortable span{display:inline-flex;align-items:center;gap:4px}
     .inventory-table td.product-cell{white-space:normal;min-width:280px;font-weight:800;color:var(--ink)}.inventory-table .num-cell{text-align:right;font-weight:900}
     .inventory-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;background:#eef2f7;color:var(--muted)}.inventory-badge.good{background:#eaf7ee;color:var(--green)}.inventory-badge.warn{background:#fff7ed;color:var(--orange)}.inventory-badge.bad{background:#fff1f0;color:var(--red)}
     .inventory-empty{padding:32px 20px;text-align:center;color:var(--muted);font-weight:800}.inventory-updated{color:var(--muted);font-size:12px;font-weight:700}
@@ -51,7 +52,7 @@ frame.addEventListener('load', () => {
       <section class="modal inventory-modal">
         <div class="modal-header">
           <div><h2>재고조회</h2><div class="inventory-updated" id="inventoryUpdated">최신 재고를 불러오는 중...</div></div>
-          <button class="close-button" id="closeInventoryButton">×</button>
+          <div class="inventory-actions"><button class="inventory-refresh-button" id="refreshInventoryButton" type="button">새로고침</button><button class="close-button" id="closeInventoryButton">×</button></div>
         </div>
         <div class="inventory-toolbar">
           <label>검색<input id="inventorySearchInput" placeholder="상품명, 상품코드, 업체 품목코드"></label>
@@ -67,7 +68,7 @@ frame.addEventListener('load', () => {
           <div class="inventory-kpi"><span>부족/품절</span><strong id="inventoryRiskCount">-</strong></div>
         </div>
         <div class="inventory-table-wrap">
-          <table class="inventory-table"><thead><tr><th>구분</th><th>상품명</th><th>상품코드</th><th>업체 품목코드</th><th>센터</th><th>소비기한</th><th>재고상태</th><th>재고</th><th>가용</th><th>할당</th></tr></thead><tbody id="inventoryTableBody"></tbody></table>
+          <table class="inventory-table"><thead><tr><th>구분</th><th>상품명</th><th>상품코드</th><th>업체 품목코드</th><th>센터</th><th>소비기한</th><th>재고상태</th><th class="sortable" data-sort-key="total_stock"><span>재고 <b id="sortIcon_total_stock"></b></span></th><th class="sortable" data-sort-key="available_stock"><span>가용 <b id="sortIcon_available_stock"></b></span></th><th class="sortable" data-sort-key="allocated_stock"><span>할당 <b id="sortIcon_allocated_stock"></b></span></th></tr></thead><tbody id="inventoryTableBody"></tbody></table>
           <div class="inventory-empty" id="inventoryEmpty" style="display:none">조건에 맞는 재고가 없습니다.</div>
         </div>
       </section>
@@ -76,10 +77,25 @@ frame.addEventListener('load', () => {
 
   let items = [];
   let updatedAt = '';
+  let sortState = { key: '', dir: 'desc' };
   const $ = id => doc.getElementById(id);
   const num = v => Number(v || 0).toLocaleString('ko-KR');
   const norm = v => String(v || '').toLowerCase().replace(/\[[^\]]+\]/g,'').replace(/감자밭|밭\(주\)|파머스베이크샵/g,'').replace(/[^0-9a-z가-힣]/g,'');
+  const raw = v => String(v || '').toLowerCase().trim();
   const category = item => item.category || '판매상품';
+  const searchable = item => [
+    item.product_name,
+    item.product_code,
+    item.company_code,
+    item.barcode,
+    item.search_key,
+    category(item)
+  ].join(' ');
+  const matchesSearch = (item, query) => {
+    if (!query) return true;
+    const text = searchable(item);
+    return raw(text).includes(raw(query)) || norm(text).includes(norm(query));
+  };
   const badge = item => {
     const available = Number(item.available_stock) || 0;
     if (available <= 0) return { text:'품절', cls:'bad' };
@@ -97,7 +113,7 @@ frame.addEventListener('load', () => {
     return names.some(name => hay.includes(name) || name.includes(hay));
   };
   const filtered = () => {
-    const q = norm($('inventorySearchInput').value);
+    const q = $('inventorySearchInput').value;
     const stock = $('inventoryStockFilter').value;
     const cat = $('inventoryCategoryFilter').value;
     const center = $('inventoryCenterFilter').value;
@@ -110,16 +126,28 @@ frame.addEventListener('load', () => {
       if (hideMaterial && itemCat === '부자재') return false;
       if (cat !== 'all' && itemCat !== cat) return false;
       if (center !== 'all' && item.center !== center) return false;
-      if (q && !norm([item.product_name,item.product_code,item.company_code,item.barcode].join(' ')).includes(q)) return false;
+      if (!matchesSearch(item, q)) return false;
       if (stock === 'in' && available <= 0) return false;
       if (stock === 'low' && !(available > 0 && available < 100)) return false;
       if (stock === 'out' && available > 0) return false;
       if (promoOnly && !isPromoItem(item, names)) return false;
       return true;
+    }).sort((a, b) => {
+      if (!sortState.key) return 0;
+      const av = Number(a[sortState.key] || 0);
+      const bv = Number(b[sortState.key] || 0);
+      return sortState.dir === 'asc' ? av - bv : bv - av;
+    });
+  };
+  const renderSortIcons = () => {
+    ['total_stock','available_stock','allocated_stock'].forEach(key => {
+      const el = $(`sortIcon_${key}`);
+      if (el) el.textContent = sortState.key === key ? (sortState.dir === 'asc' ? '▲' : '▼') : '';
     });
   };
   const render = () => {
     const rows = filtered();
+    renderSortIcons();
     $('inventoryUpdated').textContent = updatedAt ? `최종 갱신: ${updatedAt}` : '최종 갱신 정보 없음';
     $('inventoryVisibleCount').textContent = num(rows.length) + '개';
     $('inventoryTotalStock').textContent = num(rows.reduce((s,r) => s + Number(r.total_stock || 0), 0));
@@ -153,15 +181,19 @@ frame.addEventListener('load', () => {
   };
   const syncCenters = () => {
     const select = $('inventoryCenterFilter');
+    const current = select.value;
+    [...select.querySelectorAll('option:not([value="all"])')].forEach(option => option.remove());
     [...new Set(items.map(x => x.center).filter(Boolean))].sort().forEach(center => {
       const opt = doc.createElement('option');
       opt.value = opt.textContent = center;
       select.appendChild(opt);
     });
+    select.value = [...select.options].some(option => option.value === current) ? current : 'all';
   };
-  const open = async () => {
+  const loadInventory = async () => {
     $('inventoryBackdrop').classList.add('open');
     $('inventoryUpdated').textContent = '최신 재고를 불러오는 중...';
+    $('refreshInventoryButton').disabled = true;
     try {
       const res = await fetch(`${INVENTORY_URL}?t=${Date.now()}`);
       if (!res.ok) throw new Error('재고 파일을 불러오지 못했습니다.');
@@ -174,11 +206,25 @@ frame.addEventListener('load', () => {
       items = [];
       render();
       $('inventoryUpdated').textContent = '오류: ' + err.message;
+    } finally {
+      $('refreshInventoryButton').disabled = false;
     }
   };
+  const open = () => loadInventory();
 
   button.addEventListener('click', open);
+  $('refreshInventoryButton').addEventListener('click', loadInventory);
   $('closeInventoryButton').addEventListener('click', () => $('inventoryBackdrop').classList.remove('open'));
+  doc.querySelectorAll('.inventory-table th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sortKey;
+      sortState = {
+        key,
+        dir: sortState.key === key && sortState.dir === 'desc' ? 'asc' : 'desc'
+      };
+      render();
+    });
+  });
   ['inventorySearchInput','inventoryStockFilter','inventoryCategoryFilter','inventoryCenterFilter','inventoryHideMaterial','inventoryPromoOnly'].forEach(id => {
     $(id).addEventListener('input', render);
     $(id).addEventListener('change', render);
