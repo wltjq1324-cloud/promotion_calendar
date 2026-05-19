@@ -13,25 +13,48 @@ $headers = @{
   'Content-Type' = 'application/json'
 }
 
-$endpoint = 'https://api.ourbox.co.kr/api/oms/info/bat_product_stock'
+$endpoint = 'https://api.ourbox.co.kr/api/oms/info/product_stock_detail'
 $page = 1
 $totalPage = 1
 $items = New-Object System.Collections.Generic.List[object]
 $responseDate = ''
 
+try {
+  $koreaTimeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById('Korea Standard Time')
+  $generatedAt = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $koreaTimeZone).ToString('yyyy-MM-dd HH:mm:ss')
+} catch {
+  $generatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+}
+
+function ConvertFrom-Codepoints($codes) {
+  return -join ($codes | ForEach-Object { [char]$_ })
+}
+
+$labelMaterial = ConvertFrom-Codepoints @(48512,51088,51116)
+$labelSet = ConvertFrom-Codepoints @(49464,53944)
+$labelGift = ConvertFrom-Codepoints @(51613,51221,54408)
+$labelSales = ConvertFrom-Codepoints @(54032,47588,49345,54408)
+$warehouseName = ConvertFrom-Codepoints @(53685,54633,44592,48376)
+$ownerName = ConvertFrom-Codepoints @(48173,40,54028,47672,49828,48288,51060,53356,49397,41)
+$availableName = ConvertFrom-Codepoints @(44032,50857,40,44032,50857,41)
+$unusableName = ConvertFrom-Codepoints @(48520,50857)
+$materialPattern = ConvertFrom-Codepoints @(48149,49828,124,50500,51060,49828,124,53580,51060,54532,124,54252,51109,124,48393,53804,124,49828,54000,52964,124,50756,52649,124,48372,45257,124,54057,124,50500,51060,49828,54057)
+$setPattern = ConvertFrom-Codepoints @(94,92,91,49464,53944,92,93,124,49464,53944)
+$giftPattern = ConvertFrom-Codepoints @(94,92,91,51613,51221,92,93,124,51613,51221,124,53412,47553)
+
 function Get-Category($item) {
   $code = [string]$item.sales_product_company_code
   $name = [string]$item.product_name
-  if ($code -match '^(BM|BOX|ICE|PK|S-|TAPE|OPP)' -or $name -match '박스|아이스|테이프|포장|봉투|스티커|완충|보냉|팩|아이스팩') {
-    return '부자재'
+  if ($code -match '^(BM|BOX|ICE|PK|S-|TAPE|OPP)' -or $name -match $script:materialPattern) {
+    return $script:labelMaterial
   }
-  if ($name -match '^\[세트\]|세트') {
-    return '세트'
+  if ($name -match $script:setPattern) {
+    return $script:labelSet
   }
-  if ($name -match '^\[증정\]|증정|키링') {
-    return '증정품'
+  if ($name -match $script:giftPattern) {
+    return $script:labelGift
   }
-  return '판매상품'
+  return $script:labelSales
 }
 
 do {
@@ -52,9 +75,9 @@ do {
   foreach ($item in @($response.product_stock_info)) {
     $category = Get-Category $item
     $items.Add([ordered]@{
-      warehouse = '통합기본'
+      warehouse = $warehouseName
       center = [string]$item.plant_name
-      owner = '밭(파머스베이크샵)'
+      owner = $ownerName
       product_code = [string]$item.sales_product_code
       company_code = [string]$item.sales_product_company_code
       product_name = [string]$item.product_name
@@ -65,7 +88,7 @@ do {
       lot_no = [string]$item.lot_no
       received_date = ''
       stock_status = [string]$item.stock_status
-      stock_status_name = if ([int]$item.stock_status -eq 0) { '가용(가용)' } else { '불용' }
+      stock_status_name = if ([int]$item.stock_status -eq 0) { $availableName } else { $unusableName }
       unit = 'EA'
       pack_qty = ''
       total_stock = [int]$item.total_stock
@@ -83,9 +106,9 @@ do {
 } while ($page -le $totalPage)
 
 $payload = [ordered]@{
-  generated_at = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+  generated_at = $generatedAt
   response_date = $responseDate
-  source = 'ourbox-bat-product-stock'
+  source = 'ourbox-product-stock-detail'
   total_count = $items.Count
   items = $items
 }
