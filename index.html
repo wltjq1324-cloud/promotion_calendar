@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0105)file:///C:/Users/batt/Documents/Codex/2026-05-15/api-documentation-https-api-ourbox-co/calendar-base.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OURBOX 프로모션 운영 캘린더 (편집)</title>
 <style>
@@ -203,11 +203,11 @@ textarea{min-height:80px;resize:vertical}
 @media(max-width:560px){.dashboard-strip{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
-<div class="loading" id="loading">데이터 불러오는 중...</div>
+<body class="role-edit">
+<div class="loading" id="loading" style="display: none;">데이터 불러오는 중...</div>
 <div class="saving-overlay" id="savingOverlay"><div class="saving-box">⏳ 저장 중입니다...</div></div>
 
-<div class="access-gate" id="accessGate">
+<div class="access-gate" id="accessGate" style="display: none;">
   <div class="access-box">
     <h2>접속 코드 입력</h2>
     <p>권한별 코드 입력 후 캘린더를 확인합니다.</p>
@@ -215,13 +215,13 @@ textarea{min-height:80px;resize:vertical}
       <input id="accessCodeInput" type="password" placeholder="접속 코드">
       <button class="primary-button" id="accessCodeButton" type="button">확인</button>
     </div>
-    <div class="access-error" id="accessError">접속 코드가 올바르지 않습니다.</div>
+    <div class="access-error" id="accessError" style="display: none;">접속 코드가 올바르지 않습니다.</div>
     <div class="access-help">편집자 / 내부 뷰어 / 3PL 부분뷰어 권한으로 구분됩니다.</div>
   </div>
 </div>
 
 
-<main class="app" style="display:none" id="mainApp">
+<main class="app" style="" id="mainApp">
 <section class="topbar">
   <div>
     <p class="eyebrow">OURBOX PROMOTION OPS</p>
@@ -230,11 +230,11 @@ textarea{min-height:80px;resize:vertical}
   </div>
   <div class="controls">
     <button class="month-control" id="prevMonth">‹</button>
-    <strong class="role-pill" id="currentMonthLabel">-</strong>
+    <strong class="role-pill" id="currentMonthLabel">2026년 5월</strong>
     <button class="month-control" id="nextMonth">›</button>
-    <span class="role-pill" id="roleLabel">권한 확인 전</span>
-    <button class="ghost-button" id="changeAccessButton" type="button" style="display:none">권한 변경</button>
-    <button class="primary-button" id="newPromotionButton">프로모션 등록</button>
+    <span class="role-pill" id="roleLabel">편집 권한: MD/마케팅</span>
+    <button class="ghost-button" id="changeAccessButton" type="button" style="">권한 변경</button>
+    <button class="primary-button" id="newPromotionButton" style="">프로모션 등록</button>
   </div>
 </section>
 
@@ -245,27 +245,27 @@ textarea{min-height:80px;resize:vertical}
 <section class="dashboard-strip">
   <div class="metric">
     <div class="metric-label"><span>이번 달 프로모션</span><span>건수</span></div>
-    <div class="metric-value" id="metricCount">-</div>
+    <div class="metric-value" id="metricCount">2건</div>
     <div class="metric-note">등록된 이벤트 기준</div>
   </div>
   <div class="metric">
     <div class="metric-label"><span>예상 추가 출고</span><span>수량</span></div>
-    <div class="metric-value" id="metricQty">-</div>
+    <div class="metric-value" id="metricQty">2,000개</div>
     <div class="metric-note">행 수량 합산</div>
   </div>
   <div class="metric">
     <div class="metric-label"><span>가장 바쁜 주차</span><span>피크</span></div>
-    <div class="metric-value" id="metricPeak">-</div>
-    <div class="metric-note" id="metricPeakNote">주차 합계 기준</div>
+    <div class="metric-value" id="metricPeak">1,900개</div>
+    <div class="metric-note" id="metricPeakNote">6주차 예상 출고</div>
   </div>
   <div class="metric" style="overflow:hidden">
     <div class="metric-label"><span>최근 추가된 프로모션</span><span>최신 5건</span></div>
-    <div id="recentList" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--ink)">-</div>
+    <div id="recentList" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--ink)"><div class="recent-item" title="네이버테스트"><span class="recent-date">05-25~05-27</span><span class="recent-title">[네이버테스트]</span></div><div class="recent-item" title="대장언니_공구"><span class="recent-date">06-15~06-17</span><span class="recent-title">[대장언니_공구]</span></div><div class="recent-item" title="[카카오] 톡딜"><span class="recent-date">05-31~06-03</span><span class="recent-title">[[카카오] 톡딜]</span></div></div>
   </div>
 </section>
 
 <section class="calendar-shell">
-  <div class="calendar-grid" id="calendarGrid"></div>
+  <div class="calendar-grid" id="calendarGrid"><div class="day-header">일</div><div class="day-header">월</div><div class="day-header">화</div><div class="day-header">수</div><div class="day-header">목</div><div class="day-header">금</div><div class="day-header">토</div><div class="week-header">주차 합계</div><div class="day-cell outside"><div class="date-row"><span class="date-number">26</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">27</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">30</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">1</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">2</span></div></div><div class="week-total"><div class="week-total-head"><span>1주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">3</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">6</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">7</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">8</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">9</span></div></div><div class="week-total"><div class="week-total-head"><span>2주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">10</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">11</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">12</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">13</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">14</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">15</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">16</span></div></div><div class="week-total"><div class="week-total-head"><span>3주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">17</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">18</span></div></div><div class="day-cell today"><div class="date-row"><span class="date-number">19</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">20</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">21</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">22</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">23</span></div></div><div class="week-total"><div class="week-total-head"><span>4주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">24</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">25</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1779177629512" style="background: rgb(229, 57, 53);"><span class="bar-title">네이버테스트</span><span class="bar-qty">100개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">26</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779177629512" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">27</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1779177629512" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">30</span></div></div><div class="week-total"><div class="week-total-head"><span>5주차 예상 출고</span><span class="week-total-sum">100개</span></div><div class="week-promo"><div class="week-promo-name">[네이버테스트]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) (100개)</div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">31</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"><span class="bar-title">[카카오] 톡딜</span><span class="bar-qty">1,900개</span></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">1</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">2</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">3</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">6</span></div></div><div class="week-total"><div class="week-total-head"><span>6주차 예상 출고</span><span class="week-total-sum">1,900개</span></div><div class="week-promo"><div class="week-promo-name">[[카카오] 톡딜]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) + [증정] 치즈 감자빵 1개입 (1,000개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) (500개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 토마토바질 감자빵 80g 6개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 두바이쫀득 감자빵 50g 5개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 고구마빵(4개입) (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) + [단품] 고구마빵(4개입) (100개)</div></div></div></div>
 </section>
 </main>
 
@@ -279,11 +279,11 @@ textarea{min-height:80px;resize:vertical}
   <form id="promotionForm">
     <input type="hidden" id="editingId">
     <div class="form-grid">
-      <label class="full">프로모션명<input id="titleInput" required placeholder="예: 5월 라이브 특가"></label>
-      <label>시작일<input id="startDateInput" type="date" required></label>
-      <label>종료일<input id="endDateInput" type="date" required></label>
-      <label>채널<select id="channelInput" required></select></label>
-      <label>담당자<select id="ownerInput" required></select></label>
+      <label class="full">프로모션명<input id="titleInput" required="" placeholder="예: 5월 라이브 특가"></label>
+      <label>시작일<input id="startDateInput" type="date" required=""></label>
+      <label>종료일<input id="endDateInput" type="date" required=""></label>
+      <label>채널<select id="channelInput" required=""><option value="자사몰">자사몰</option><option value="네이버">네이버</option><option value="카카오">카카오</option><option value="기타">기타</option></select></label>
+      <label>담당자<select id="ownerInput" required=""><option value="장정환">장정환</option><option value="민예은">민예은</option><option value="안서준">안서준</option><option value="김슬기">김슬기</option></select></label>
       <div class="sku-section full">
         <div class="sku-section-label">
           <span>SKU 구성 / 예상 수량</span>
@@ -1032,5 +1032,6 @@ if(ROLE_CONFIG[ROLE]){
   showAccessGate();
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
