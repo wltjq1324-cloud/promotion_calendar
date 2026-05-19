@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '10 6 * * *'
+  push:
+    paths:
+      - '.github/workflows/update-inventory.yml'
+      - 'scripts/update-inventory.ps1'
 
 permissions:
   contents: write
