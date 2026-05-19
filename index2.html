@@ -68,7 +68,7 @@ frame.addEventListener('load', () => {
           <div class="inventory-kpi"><span>부족/품절</span><strong id="inventoryRiskCount">-</strong></div>
         </div>
         <div class="inventory-table-wrap">
-          <table class="inventory-table"><thead><tr><th>구분</th><th>상품명</th><th>상품코드</th><th>업체 품목코드</th><th>센터</th><th>소비기한</th><th>재고상태</th><th class="sortable" data-sort-key="total_stock"><span>재고 <b id="sortIcon_total_stock"></b></span></th><th class="sortable" data-sort-key="available_stock"><span>가용 <b id="sortIcon_available_stock"></b></span></th><th class="sortable" data-sort-key="allocated_stock"><span>할당 <b id="sortIcon_allocated_stock"></b></span></th></tr></thead><tbody id="inventoryTableBody"></tbody></table>
+          <table class="inventory-table"><thead><tr><th>구분</th><th>상품명</th><th>상품코드</th><th>업체 품목코드</th><th>센터</th><th>소비기한</th><th>로트번호</th><th>배치번호</th><th>재고상태</th><th class="sortable" data-sort-key="total_stock"><span>재고 <b id="sortIcon_total_stock"></b></span></th><th class="sortable" data-sort-key="available_stock"><span>가용 <b id="sortIcon_available_stock"></b></span></th><th class="sortable" data-sort-key="allocated_stock"><span>할당 <b id="sortIcon_allocated_stock"></b></span></th></tr></thead><tbody id="inventoryTableBody"></tbody></table>
           <div class="inventory-empty" id="inventoryEmpty" style="display:none">조건에 맞는 재고가 없습니다.</div>
         </div>
       </section>
@@ -88,6 +88,9 @@ frame.addEventListener('load', () => {
     item.product_code,
     item.company_code,
     item.barcode,
+    item.expiration_date,
+    item.lot_no,
+    item.batch_no,
     item.search_key,
     category(item)
   ].join(' ');
@@ -165,6 +168,8 @@ frame.addEventListener('load', () => {
         item.company_code || '',
         item.center || '',
         item.expiration_date || '-',
+        item.lot_no || '-',
+        item.batch_no || '-',
         `<span class="inventory-badge ${b.cls}">${b.text}</span>`,
         num(item.total_stock),
         num(item.available_stock),
@@ -172,7 +177,7 @@ frame.addEventListener('load', () => {
       ].forEach((value, index) => {
         const td = doc.createElement('td');
         if (index === 1) td.className = 'product-cell';
-        if (index >= 7) td.className = 'num-cell';
+        if (index >= 9) td.className = 'num-cell';
         td.innerHTML = value;
         tr.appendChild(td);
       });
@@ -199,7 +204,7 @@ frame.addEventListener('load', () => {
       if (!res.ok) throw new Error('재고 파일을 불러오지 못했습니다.');
       const data = await res.json();
       items = Array.isArray(data.items) ? data.items : [];
-      updatedAt = data.generated_at || data.response_date || '';
+      updatedAt = data.response_date || data.generated_at || '';
       syncCenters();
       render();
     } catch (err) {
