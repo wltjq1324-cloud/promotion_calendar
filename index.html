@@ -3,130 +3,240 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OURBOX 프로모션 운영 캘린더</title>
+<title>OURBOX 프로모션 운영 캘린더 (편집)</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f6f7f9}
-#calendarFrame{width:100%;height:100%;border:0;display:block}
+:root{
+  --bg:#f6f7f9;--panel:#fff;--ink:#17202a;--muted:#667085;--line:#d8dee8;
+  --soft:#eef2f7;--brand:#176b87;--brand-dark:#0f4f63;--green:#18864b;
+  --orange:#c56514;--red:#b42318;--shadow:0 14px 40px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.app{min-height:100vh;padding:24px}
+.topbar{display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:16px;align-items:end;margin-bottom:18px}
+.eyebrow{margin:0 0 6px;color:var(--brand-dark);font-size:13px;font-weight:800}
+h1{margin:0;font-size:clamp(26px,3vw,40px);line-height:1.1}
+.subcopy{margin:10px 0 0;color:var(--muted);line-height:1.5}
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}
+.month-control,.role-pill,.primary-button,.ghost-button{border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-height:38px;padding:8px 12px;font-weight:700}
+.primary-button{border-color:var(--brand);background:var(--brand);color:#fff}
+.ghost-button:hover,.month-control:hover{background:var(--soft)}
+.action-strip{border:2px solid var(--orange);border-radius:8px;background:#fff7ed;padding:14px 18px;margin-bottom:14px;font-size:13px;line-height:1.6}
+.action-strip strong{color:var(--orange);font-weight:900}
+.action-strip em{font-style:normal;color:var(--red);font-weight:900}
+.dashboard-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.metric{min-height:96px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:14px;box-shadow:var(--shadow)}
+.metric-label{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:13px;font-weight:700}
+.metric-value{margin-top:10px;font-size:26px;font-weight:900}
+.metric-note{margin-top:6px;color:var(--muted);font-size:12px}
+.calendar-shell{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
+.calendar-grid{min-width:900px;display:grid;grid-template-columns:repeat(7,minmax(92px,1fr)) 170px}
+.day-header,.week-header{position:sticky;top:0;z-index:2;min-height:44px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fbfcfe;padding:12px 10px;font-size:13px;font-weight:900;text-align:center}
+.week-header{border-right:0;background:#eef6f8;color:var(--brand-dark)}
+.day-cell{min-height:130px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;padding:5px 2px 5px 6px;position:relative;overflow:visible}
+.day-cell:hover{background:#fafcfd}
+.day-cell.outside{background:#f2f4f7;color:#98a2b3}
+.day-cell.today .date-number{background:var(--brand);color:#fff}
+.date-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.date-number{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:900}
+.promo-slot{height:24px;margin:1px 0;position:relative}
+.promo-bar{position:absolute;top:2px;bottom:2px;left:0;right:3px;border-radius:5px;padding:0 6px;display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:#fff;cursor:pointer;overflow:hidden;white-space:nowrap;transition:filter .15s}
+.promo-bar:hover{filter:brightness(1.12)}
+.promo-bar.start{border-radius:6px 0 0 6px;right:-2px}
+.promo-bar.middle{border-radius:0;left:-2px;right:-2px}
+.promo-bar.end{border-radius:0 6px 6px 0;left:-2px}
+.promo-bar.single{border-radius:6px}
+.promo-bar.start.end{border-radius:6px;right:4px}
+.bar-title{flex:1;overflow:hidden;text-overflow:ellipsis}
+.bar-qty{font-size:9.5px;opacity:.85;flex-shrink:0}
+.week-total{min-height:130px;border-bottom:1px solid var(--line);background:#f2faf9;padding:8px;font-size:10.5px;line-height:1.4;overflow-y:auto;max-height:300px}
+.week-total-head{font-weight:900;color:var(--brand-dark);font-size:11.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.week-total-sum{color:var(--brand-dark);font-weight:900;font-size:13px}
+.week-promo{margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed #d3e3e6}
+.week-promo:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.week-promo-name{font-weight:800;color:var(--ink);margin-bottom:4px;font-size:11px}
+.week-promo-sku{color:var(--muted);font-size:10.5px;line-height:1.45;padding-left:3px}
+.week-total-empty{color:var(--muted);font-size:12px}
+.modal-backdrop{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.48);padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{width:min(920px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:8px;background:var(--panel);box-shadow:0 24px 80px rgba(15,23,42,.24)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding:18px 20px}
+.modal-header h2{margin:0;font-size:20px}
+.close-button{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;font-size:20px;line-height:1}
+form{padding:20px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+label{display:grid;gap:7px;color:var(--muted);font-size:13px;font-weight:800}
+input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:10px 11px}
+textarea{min-height:80px;resize:vertical}
+.full{grid-column:1/-1}
+.form-actions{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);margin:18px -20px -20px;padding:16px 20px;background:#fbfcfe}
+.sku-section{grid-column:1/-1}
+.sku-section-label{color:var(--muted);font-size:13px;font-weight:800;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.sku-section-label .hint{color:var(--muted);font-weight:600;font-size:12px}
+.sku-rows{display:flex;flex-direction:column;gap:10px}
+.sku-row{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--soft);flex-wrap:wrap}
+.sku-row-num{flex:0 0 24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.sku-items{flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.sku-item-select{min-width:160px;flex:1}
+.sku-item-plus{color:var(--muted);font-weight:900;font-size:14px;flex:0 0 auto}
+.sku-add-bundle{flex:0 0 auto;border:1px dashed var(--line);border-radius:6px;background:#fff;color:var(--muted);font-size:11px;padding:7px 10px;font-weight:700;white-space:nowrap}
+.sku-add-bundle:hover{border-color:var(--brand);color:var(--brand)}
+.sku-item-remove{flex:0 0 auto;width:22px;height:22px;border:none;border-radius:50%;background:#fff;color:var(--muted);font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+.sku-item-remove:hover{background:var(--red);color:#fff}
+.sku-qty-group{flex:0 0 auto;display:flex;gap:4px;align-items:center}
+.sku-qty-display{width:80px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:#fff;font-weight:900;font-size:13px}
+  .sku-qty-display::-webkit-inner-spin-button,
+.sku-qty-display::-webkit-outer-spin-button{
+  opacity:1;
+}
+.sku-qty-btn{border:1px solid var(--brand);border-radius:6px;background:#fff;color:var(--brand);font-weight:900;padding:6px 9px;font-size:11px;white-space:nowrap}
+.sku-qty-btn:hover{background:var(--brand);color:#fff}
+.sku-qty-reset{border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted);padding:6px 8px;font-size:11px;font-weight:700}
+.sku-qty-reset:hover{border-color:var(--red);color:var(--red)}
+.sku-row-remove{flex:0 0 auto;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--muted);padding:6px 9px;font-size:11px;font-weight:700}
+.sku-row-remove:hover{border-color:var(--red);color:var(--red);background:#fff5f5}
+.sku-add-row{margin-top:8px;border:2px dashed var(--line);border-radius:8px;background:#fff;color:var(--muted);font-weight:700;padding:10px;font-size:13px;width:100%}
+.sku-add-row:hover{border-color:var(--brand);color:var(--brand)}
+.sku-total-row{
+  margin-top:10px;
+  padding:10px 14px;
+  background:#eef6f8;
+  border-radius:6px;
+  color:var(--brand-dark);
+  font-size:13px;
+  font-weight:800;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  align-items:flex-end;
+}
+.saving-overlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.28)}
+.saving-overlay.open{display:flex}
+.saving-box{background:#fff;border-radius:8px;padding:18px 32px;box-shadow:var(--shadow);font-weight:700;color:var(--brand-dark)}
+.loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:8px;padding:24px 36px;box-shadow:var(--shadow);font-weight:700;color:var(--brand-dark)}
+.recent-item{display:block;padding:3px 0;cursor:pointer;border-bottom:1px dashed #e5e9ef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
+.recent-item:last-child{border-bottom:0}
+.recent-item:hover{color:var(--brand)}
+.recent-item .recent-date{color:var(--muted);font-weight:700}
+.recent-item .recent-title{color:var(--ink);font-weight:800;margin-left:4px}
+.price-row{
+  flex:1 1 100%;
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  align-items:center;
+  gap:8px 10px;
+  margin:4px 64px 0 32px;
+  padding-top:2px;
+  font-size:12px;
+}
+.price-base-wrap{
+  min-width:0;
+  color:var(--muted);
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.price-base{color:var(--muted);font-weight:700}
+.price-base-calc{color:var(--muted);font-size:10.5px;margin-left:2px}
+.price-input-wrap{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.price-input{width:90px;border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;font-weight:700;text-align:right}
+.price-rate{font-size:12px;font-weight:700;color:var(--muted);min-width:72px;white-space:nowrap;text-align:right}
+.price-rate.over{color:var(--red);font-weight:900}
+.inventory-modal{width:min(1180px,100%)}
+.inventory-toolbar{display:grid;grid-template-columns:2fr repeat(3,minmax(130px,1fr));gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);background:#fbfcfe}
+.inventory-toolbar label{gap:5px}
+.inventory-checks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-weight:800}
+.inventory-checks label{display:flex;grid-auto-flow:column;align-items:center;gap:6px}
+.inventory-checks input{width:auto}
+.inventory-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.inventory-kpi{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px 12px}
+.inventory-kpi span{display:block;color:var(--muted);font-size:11px;font-weight:800}
+.inventory-kpi strong{display:block;margin-top:5px;font-size:20px;font-weight:900;color:var(--brand-dark)}
+.inventory-table-wrap{max-height:58vh;overflow:auto}
+.inventory-table{width:100%;border-collapse:collapse;font-size:12px}
+.inventory-table th,.inventory-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;white-space:nowrap}
+.inventory-table th{position:sticky;top:0;z-index:1;background:#eef6f8;color:var(--brand-dark);font-weight:900}
+.inventory-table td.product-cell{white-space:normal;min-width:280px;font-weight:800;color:var(--ink)}
+.inventory-table .num-cell{text-align:right;font-weight:900}
+.inventory-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;background:#eef2f7;color:var(--muted)}
+.inventory-badge.good{background:#eaf7ee;color:var(--green)}
+.inventory-badge.warn{background:#fff7ed;color:var(--orange)}
+.inventory-badge.bad{background:#fff1f0;color:var(--red)}
+.inventory-empty{padding:32px 20px;text-align:center;color:var(--muted);font-weight:800}
+.inventory-updated{color:var(--muted);font-size:12px;font-weight:700}
+@media(max-width:720px){
+  .price-row{
+    margin:6px 0 0 32px;
+    grid-template-columns:1fr;
+    justify-items:start;
+  }
+  .price-rate{text-align:left}
+  .inventory-toolbar{grid-template-columns:1fr}
+  .inventory-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@keyframes flashBar{
+  0%{background:#fff}
+  25%{background:var(--flash-color,#039be5)}
+  50%{background:#fff}
+  75%{background:var(--flash-color,#039be5)}
+  100%{background:var(--flash-color,#039be5)}
+}
+.access-gate{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.52);padding:20px}
+.access-box{width:min(420px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 80px rgba(15,23,42,.28);padding:24px}
+.access-box h2{margin:0 0 8px;font-size:22px}
+.access-box p{margin:0 0 16px;color:var(--muted);line-height:1.5}
+.access-code-row{display:flex;gap:8px}
+.access-code-row input{flex:1}
+.access-error{display:none;margin-top:10px;color:var(--red);font-size:13px;font-weight:800}
+.access-help{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.5}
+.role-external .dashboard-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+.role-external .dashboard-strip .metric:nth-child(4){display:none}
+.role-external .recent-item{cursor:default}
+.role-external .price-row,
+.role-external .sku-total-row div:nth-child(2){display:none!important}
+.role-external .promo-bar{cursor:default}
+.role-internal #newPromotionButton,
+.role-external #newPromotionButton{display:none!important}
+.role-internal #submitButton,
+.role-internal #deleteButton,
+.role-internal #addSkuRowBtn,
+.role-internal .sku-add-bundle,
+.role-internal .sku-item-remove,
+.role-internal .sku-qty-btn,
+.role-internal .sku-qty-reset,
+.role-internal .sku-row-remove{display:none!important}
+.role-external #submitButton,
+.role-external #deleteButton,
+.role-external #addSkuRowBtn,
+.role-external .sku-add-bundle,
+.role-external .sku-item-remove,
+.role-external .sku-qty-btn,
+.role-external .sku-qty-reset,
+.role-external .sku-row-remove{display:none!important}
+.readonly-note{display:none;margin:0 20px 0;padding:10px 12px;border-radius:8px;background:#eef6f8;color:var(--brand-dark);font-size:13px;font-weight:800}
+.role-internal .readonly-note{display:block}
+.promo-bar.flash{animation:flashBar 1.2s ease-in-out 1}
+@media(max-width:860px){.app{padding:16px}.topbar{grid-template-columns:1fr}.controls{justify-content:flex-start}.dashboard-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.dashboard-strip{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<iframe id="calendarFrame" src="./calendar-base.html" title="OURBOX 프로모션 운영 캘린더"></iframe>
-<script>
-const INVENTORY_URL='./inventory-latest.json';
-const frame=document.getElementById('calendarFrame');
-
-function installNaverLabelPatch(doc){
-  if(!doc||doc.getElementById('naverChannelLabelPatch'))return;
-  const script=doc.createElement('script');
-  script.id='naverChannelLabelPatch';
-  script.textContent=`(()=>{
-    if(window.__naverChannelLabelPatch)return;
-    window.__naverChannelLabelPatch=true;
-    const clean=text=>String(text||'').replace(/\s/g,'').trim();
-    const isNaver=p=>String((p&&p.channel)||'').trim()==='네이버';
-    const apply=()=>{
-      try{
-        if(typeof ROLE==='undefined'||ROLE!=='external'||typeof state==='undefined')return;
-        (state.promotions||[]).forEach(p=>{
-          if(!isNaver(p))return;
-          document.querySelectorAll('[data-promo-id]').forEach(bar=>{
-            if(bar.dataset.promoId!==String(p.id))return;
-            const title=bar.querySelector('.bar-title');
-            if(title&&clean(title.textContent)==='출고예정')title.textContent='네이버 출고예정';
-          });
-        });
-        if(typeof getWeeks!=='function'||typeof getPromoSkuInWeek!=='function'||typeof toKey!=='function')return;
-        const weeks=getWeeks(state.visibleDate.getFullYear(),state.visibleDate.getMonth());
-        document.querySelectorAll('.week-total').forEach((box,wi)=>{
-          const week=weeks[wi];
-          if(!week)return;
-          const names=box.querySelectorAll('.week-promo-name');
-          let nameIndex=0;
-          (state.promotions||[]).filter(p=>week.some(d=>{const k=toKey(d);return p.start_date<=k&&p.end_date>=k})).forEach(p=>{
-            const skus=getPromoSkuInWeek(p,week);
-            if(!skus||!skus.length)return;
-            const name=names[nameIndex++];
-            if(name&&isNaver(p)&&clean(name.textContent)==='[출고항목]')name.textContent='[네이버 출고항목]';
-          });
-        });
-      }catch(err){}
-    };
-    const wrap=()=>{
-      if(typeof renderCalendar!=='function')return false;
-      if(renderCalendar.__naverChannelLabelPatch){apply();return true;}
-      const originalRenderCalendar=renderCalendar;
-      renderCalendar=function(){const result=originalRenderCalendar.apply(this,arguments);apply();return result;};
-      renderCalendar.__naverChannelLabelPatch=true;
-      apply();
-      return true;
-    };
-    if(!wrap()){
-      let tries=0;
-      const timer=setInterval(()=>{if(wrap()||++tries>30)clearInterval(timer)},200);
-    }
-  })();`;
-  doc.body.appendChild(script);
-}
-
-function installInventory(doc,win){
-  if(!doc||doc.getElementById('inventoryButton'))return;
-  const nextMonth=doc.getElementById('nextMonth');
-  if(!nextMonth)return;
-  const style=doc.createElement('style');
-  style.id='inventoryStyle';
-  style.textContent=`
-    .inventory-modal{width:min(1180px,100%)}
-    .inventory-actions{display:flex;align-items:center;gap:8px}.inventory-refresh-button{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--brand-dark);font-weight:900;padding:10px 12px;cursor:pointer}.inventory-refresh-button:hover{background:#eef6f8}.inventory-refresh-button:disabled{opacity:.55;cursor:wait}
-    .inventory-toolbar{display:grid;grid-template-columns:2fr repeat(3,minmax(130px,1fr));gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);background:#fbfcfe}.inventory-toolbar label{gap:5px}.inventory-checks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-weight:800}.inventory-checks label{display:flex;grid-auto-flow:column;align-items:center;gap:6px}.inventory-checks input{width:auto}
-    .inventory-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 20px;border-bottom:1px solid var(--line)}.inventory-kpi{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px 12px}.inventory-kpi span{display:block;color:var(--muted);font-size:11px;font-weight:800}.inventory-kpi strong{display:block;margin-top:5px;font-size:20px;font-weight:900;color:var(--brand-dark)}
-    .inventory-table-wrap{max-height:58vh;overflow:auto}.inventory-table{width:100%;border-collapse:collapse;font-size:12px}.inventory-table th,.inventory-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;white-space:nowrap}.inventory-table th{position:sticky;top:0;z-index:1;background:#eef6f8;color:var(--brand-dark);font-weight:900}.inventory-table th.sortable{cursor:pointer;user-select:none}.inventory-table th.sortable:hover{background:#dff0f4}.inventory-table th.sortable span{display:inline-flex;align-items:center;gap:4px}.inventory-table td.product-cell{white-space:normal;min-width:280px;font-weight:800;color:var(--ink)}.inventory-table .num-cell{text-align:right;font-weight:900}
-    .inventory-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;background:#eef2f7;color:var(--muted)}.inventory-badge.good{background:#eaf7ee;color:var(--green)}.inventory-badge.warn{background:#fff7ed;color:var(--orange)}.inventory-badge.bad{background:#fff1f0;color:var(--red)}.inventory-empty{padding:32px 20px;text-align:center;color:var(--muted);font-weight:800}.inventory-updated{color:var(--muted);font-size:12px;font-weight:700}
-    @media(max-width:720px){.inventory-toolbar{grid-template-columns:1fr}.inventory-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  `;
-  doc.head.appendChild(style);
-  const button=doc.createElement('button');
-  button.className='ghost-button';
-  button.id='inventoryButton';
-  button.type='button';
-  button.textContent='재고조회';
-  nextMonth.insertAdjacentElement('afterend',button);
-  doc.body.insertAdjacentHTML('beforeend',`
-    <div class="modal-backdrop" id="inventoryBackdrop"><section class="modal inventory-modal">
-      <div class="modal-header"><div><h2>재고조회</h2><div class="inventory-updated" id="inventoryUpdated">최신 재고를 불러오는 중...</div></div><div class="inventory-actions"><button class="inventory-refresh-button" id="refreshInventoryButton" type="button">새로고침</button><button class="close-button" id="closeInventoryButton">×</button></div></div>
-      <div class="inventory-toolbar"><label>검색<input id="inventorySearchInput" placeholder="상품명, 상품코드, 업체 품목코드"></label><label>재고 상태<select id="inventoryStockFilter"><option value="all">전체</option><option value="in">재고 있음</option><option value="low">100개 미만</option><option value="out">품절</option></select></label><label>구분<select id="inventoryCategoryFilter"><option value="all">전체</option><option value="판매상품">판매상품</option><option value="증정품">증정품</option><option value="부자재">부자재</option><option value="세트">세트</option></select></label><label>센터<select id="inventoryCenterFilter"><option value="all">전체</option></select></label><div class="inventory-checks"><label><input id="inventoryHideMaterial" type="checkbox" checked> 부자재 제외</label><label><input id="inventoryPromoOnly" type="checkbox"> 현재 달 프로모션 품목만</label></div></div>
-      <div class="inventory-summary"><div class="inventory-kpi"><span>표시 품목</span><strong id="inventoryVisibleCount">-</strong></div><div class="inventory-kpi"><span>총 재고</span><strong id="inventoryTotalStock">-</strong></div><div class="inventory-kpi"><span>가용 재고</span><strong id="inventoryAvailableStock">-</strong></div><div class="inventory-kpi"><span>부족/품절</span><strong id="inventoryRiskCount">-</strong></div></div>
-      <div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>구분</th><th>상품명</th><th>상품코드</th><th>업체 품목코드</th><th>센터</th><th>소비기한</th><th>로트번호</th><th>배치번호</th><th>재고상태</th><th class="sortable" data-sort-key="total_stock"><span>재고 <b id="sortIcon_total_stock"></b></span></th><th class="sortable" data-sort-key="available_stock"><span>가용 <b id="sortIcon_available_stock"></b></span></th><th class="sortable" data-sort-key="allocated_stock"><span>할당 <b id="sortIcon_allocated_stock"></b></span></th></tr></thead><tbody id="inventoryTableBody"></tbody></table><div class="inventory-empty" id="inventoryEmpty" style="display:none">조건에 맞는 재고가 없습니다.</div></div>
-    </section></div>`);
-  let items=[],updatedAt='',sortState={key:'',dir:'desc'};
-  const $=id=>doc.getElementById(id),num=v=>Number(v||0).toLocaleString('ko-KR'),raw=v=>String(v||'').toLowerCase().trim();
-  const norm=v=>String(v||'').toLowerCase().replace(/\[[^\]]+\]/g,'').replace(/감자밭|밭\(주\)|파머스베이크샵/g,'').replace(/[^0-9a-z가-힣]/g,'');
-  const category=item=>item.category||'판매상품';
-  const searchable=item=>[item.product_name,item.product_code,item.company_code,item.barcode,item.expiration_date,item.lot_no,item.batch_no,item.search_key,category(item)].join(' ');
-  const matchesSearch=(item,q)=>!q||raw(searchable(item)).includes(raw(q))||norm(searchable(item)).includes(norm(q));
-  const badge=item=>{const available=Number(item.available_stock)||0;if(available<=0)return{text:'품절',cls:'bad'};if(available<100)return{text:'부족',cls:'warn'};return{text:'가용',cls:'good'}};
-  const promoNames=()=>{if(typeof win.getVisiblePromotions!=='function'||typeof win.parseSku!=='function')return[];const names=new Set();win.getVisiblePromotions().forEach(p=>win.parseSku(p.product_name).forEach(row=>(row.items||[]).forEach(name=>names.add(norm(name)))));return[...names].filter(Boolean)};
-  const isPromoItem=(item,names)=>{const hay=norm([item.product_name,item.product_code,item.company_code].join(' '));return names.some(name=>hay.includes(name)||name.includes(hay))};
-  const filtered=()=>{const q=$('inventorySearchInput').value,stock=$('inventoryStockFilter').value,cat=$('inventoryCategoryFilter').value,center=$('inventoryCenterFilter').value,hideMaterial=$('inventoryHideMaterial').checked,promoOnly=$('inventoryPromoOnly').checked,names=promoOnly?promoNames():[];return items.filter(item=>{const itemCat=category(item),available=Number(item.available_stock)||0;if(hideMaterial&&itemCat==='부자재')return false;if(cat!=='all'&&itemCat!==cat)return false;if(center!=='all'&&item.center!==center)return false;if(!matchesSearch(item,q))return false;if(stock==='in'&&available<=0)return false;if(stock==='low'&&!(available>0&&available<100))return false;if(stock==='out'&&available>0)return false;if(promoOnly&&!isPromoItem(item,names))return false;return true}).sort((a,b)=>{if(!sortState.key)return 0;const av=Number(a[sortState.key]||0),bv=Number(b[sortState.key]||0);return sortState.dir==='asc'?av-bv:bv-av})};
-  const renderSortIcons=()=>['total_stock','available_stock','allocated_stock'].forEach(key=>{const el=$(`sortIcon_${key}`);if(el)el.textContent=sortState.key===key?(sortState.dir==='asc'?'▲':'▼'):''});
-  const render=()=>{const rows=filtered();renderSortIcons();$('inventoryUpdated').textContent=updatedAt?`최종 갱신: ${updatedAt}`:'최종 갱신 정보 없음';$('inventoryVisibleCount').textContent=num(rows.length)+'개';$('inventoryTotalStock').textContent=num(rows.reduce((s,r)=>s+Number(r.total_stock||0),0));$('inventoryAvailableStock').textContent=num(rows.reduce((s,r)=>s+Number(r.available_stock||0),0));$('inventoryRiskCount').textContent=num(rows.filter(r=>Number(r.available_stock||0)<100).length)+'개';$('inventoryTableBody').innerHTML='';$('inventoryEmpty').style.display=rows.length?'none':'';rows.forEach(item=>{const b=badge(item),tr=doc.createElement('tr');[`<span class="inventory-badge">${category(item)}</span>`,item.product_name||'',item.product_code||'',item.company_code||'',item.center||'',item.expiration_date||'-',item.lot_no||'-',item.batch_no||'-',`<span class="inventory-badge ${b.cls}">${b.text}</span>`,num(item.total_stock),num(item.available_stock),num(item.allocated_stock)].forEach((value,index)=>{const td=doc.createElement('td');if(index===1)td.className='product-cell';if(index>=9)td.className='num-cell';td.innerHTML=value;tr.appendChild(td)});$('inventoryTableBody').appendChild(tr)})};
-  const syncCenters=()=>{const select=$('inventoryCenterFilter'),current=select.value;[...select.querySelectorAll('option:not([value="all"])')].forEach(option=>option.remove());[...new Set(items.map(x=>x.center).filter(Boolean))].sort().forEach(center=>{const opt=doc.createElement('option');opt.value=opt.textContent=center;select.appendChild(opt)});select.value=[...select.options].some(option=>option.value===current)?current:'all'};
-  const loadInventory=async()=>{$('inventoryBackdrop').classList.add('open');$('inventoryUpdated').textContent='최신 재고를 불러오는 중...';$('refreshInventoryButton').disabled=true;try{const res=await fetch(`${INVENTORY_URL}?t=${Date.now()}`);if(!res.ok)throw new Error('재고 파일을 불러오지 못했습니다.');const data=await res.json();items=Array.isArray(data.items)?data.items:[];updatedAt=data.response_date||data.generated_at||'';syncCenters();render()}catch(err){items=[];render();$('inventoryUpdated').textContent='오류: '+err.message}finally{$('refreshInventoryButton').disabled=false}};
-  button.addEventListener('click',loadInventory);$('refreshInventoryButton').addEventListener('click',loadInventory);$('closeInventoryButton').addEventListener('click',()=>$('inventoryBackdrop').classList.remove('open'));
-  doc.querySelectorAll('.inventory-table th.sortable').forEach(th=>th.addEventListener('click',()=>{const key=th.dataset.sortKey;sortState={key,dir:sortState.key===key&&sortState.dir==='desc'?'asc':'desc'};render()}));
-  ['inventorySearchInput','inventoryStockFilter','inventoryCategoryFilter','inventoryCenterFilter','inventoryHideMaterial','inventoryPromoOnly'].forEach(id=>{$(id).addEventListener('input',render);$(id).addEventListener('change',render)});
-}
-
-frame.addEventListener('load',()=>{
-  const apply=()=>{
-    const doc=frame.contentDocument,win=frame.contentWindow;
-    if(!doc)return;
-    installNaverLabelPatch(doc);
-    installInventory(doc,win);
-  };
-  apply();
-  let tries=0;
-  const timer=setInterval(()=>{apply();if(++tries>20||frame.contentDocument?.getElementById('inventoryButton'))clearInterval(timer)},300);
-});
-</script>
-</body>
-</html>
+<div class="loading" id="loading">데이터 불러오는 중...</div>
+<div class="saving-overlay" id="savingOverlay"><div class="saving-box">⏳ 저장 중입니다...</div></div>
+<div class="access-gate" id="accessGate">
+  <div class="access-box">
+    <h2>접속 코드 입력</h2>
+    <p>권한별 코드 입력 후 캘린더를 확인합니다.</p>
+    <div class="access-code-row">
+      <input id="accessCodeInput" type="password" placeholder="접속 코드">
+      <button class="primary-button" id="accessCodeButton" type="button">확인</button>
+    </div>
+    <div class="access-error" id="accessError">접속 코드가 올바르지 않습니다.</div>
+    <div class="access-help">편집자 / 내부 뷰어 / 3PL 부분뷰어 권한으로 구분됩니다.</div>
+  </div>
+</div>
+<main class="app" style="display:none" id="mainApp">
+<section class="topbar">
+  <div>
