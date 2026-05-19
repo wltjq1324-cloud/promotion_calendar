@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0105)file:///C:/Users/batt/Documents/Codex/2026-05-15/api-documentation-https-api-ourbox-co/calendar-base.html -->
+<!-- saved from url=(0120)file:///C:/Users/batt/Documents/Codex/2026-05-15/api-documentation-https-api-ourbox-co/INVENTORY_ADDED_DIRECT_INDEX.html -->
 <html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -198,12 +198,42 @@ textarea{min-height:80px;resize:vertical}
 .readonly-note{display:none;margin:0 20px 0;padding:10px 12px;border-radius:8px;background:#eef6f8;color:var(--brand-dark);font-size:13px;font-weight:800}
 .role-internal .readonly-note{display:block}
 
+.inventory-modal{width:min(1180px,100%)}
+.inventory-toolbar{display:grid;grid-template-columns:2fr repeat(3,minmax(130px,1fr));gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);background:#fbfcfe}
+.inventory-toolbar label{gap:5px}
+.inventory-actions{display:flex;align-items:center;gap:8px}
+.inventory-refresh-button{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--brand-dark);font-weight:900;padding:10px 12px;cursor:pointer}
+.inventory-refresh-button:hover{background:#eef6f8}
+.inventory-refresh-button:disabled{opacity:.55;cursor:wait}
+.inventory-checks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-weight:800}
+.inventory-checks label{display:flex;grid-auto-flow:column;align-items:center;gap:6px}
+.inventory-checks input{width:auto}
+.inventory-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.inventory-kpi{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px 12px}
+.inventory-kpi span{display:block;color:var(--muted);font-size:11px;font-weight:800}
+.inventory-kpi strong{display:block;margin-top:5px;font-size:20px;font-weight:900;color:var(--brand-dark)}
+.inventory-table-wrap{max-height:58vh;overflow:auto}
+.inventory-table{width:100%;border-collapse:collapse;font-size:12px}
+.inventory-table th,.inventory-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top;white-space:nowrap}
+.inventory-table th{position:sticky;top:0;z-index:1;background:#eef6f8;color:var(--brand-dark);font-weight:900}
+.inventory-table th.sortable{cursor:pointer;user-select:none}
+.inventory-table th.sortable:hover{background:#dff0f4}
+.inventory-table td.product-cell{white-space:normal;min-width:280px;font-weight:800;color:var(--ink)}
+.inventory-table .num-cell{text-align:right;font-weight:900}
+.inventory-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;background:#eef2f7;color:var(--muted)}
+.inventory-badge.good{background:#eaf7ee;color:var(--green)}
+.inventory-badge.warn{background:#fff7ed;color:var(--orange)}
+.inventory-badge.bad{background:#fff1f0;color:var(--red)}
+.inventory-empty{padding:32px 20px;text-align:center;color:var(--muted);font-weight:800}
+.inventory-updated{color:var(--muted);font-size:12px;font-weight:700}
+
 .promo-bar.flash{animation:flashBar 1.2s ease-in-out 1}
 @media(max-width:860px){.app{padding:16px}.topbar{grid-template-columns:1fr}.controls{justify-content:flex-start}.dashboard-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.form-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.inventory-toolbar{grid-template-columns:1fr}.inventory-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.dashboard-strip{grid-template-columns:1fr}}
 </style>
 </head>
-<body class="role-edit">
+<body class="role-external">
 <div class="loading" id="loading" style="display: none;">데이터 불러오는 중...</div>
 <div class="saving-overlay" id="savingOverlay"><div class="saving-box">⏳ 저장 중입니다...</div></div>
 
@@ -215,7 +245,7 @@ textarea{min-height:80px;resize:vertical}
       <input id="accessCodeInput" type="password" placeholder="접속 코드">
       <button class="primary-button" id="accessCodeButton" type="button">확인</button>
     </div>
-    <div class="access-error" id="accessError" style="display: none;">접속 코드가 올바르지 않습니다.</div>
+    <div class="access-error" id="accessError">접속 코드가 올바르지 않습니다.</div>
     <div class="access-help">편집자 / 내부 뷰어 / 3PL 부분뷰어 권한으로 구분됩니다.</div>
   </div>
 </div>
@@ -225,16 +255,17 @@ textarea{min-height:80px;resize:vertical}
 <section class="topbar">
   <div>
     <p class="eyebrow">OURBOX PROMOTION OPS</p>
-    <h1>월간 프로모션 운영 캘린더</h1>
-    <p class="subcopy">MD/마케팅 등록 기준으로 CS, 물류, 생산이 같은 화면에서 프로모션 기간과 예상 출고 부담을 확인합니다.</p>
+    <h1>월간 출고 예정 캘린더</h1>
+    <p class="subcopy">외부 물류센터 공유용 화면입니다. 출고 일정, SKU 구성, 예상 수량만 확인합니다.</p>
   </div>
   <div class="controls">
     <button class="month-control" id="prevMonth">‹</button>
     <strong class="role-pill" id="currentMonthLabel">2026년 5월</strong>
     <button class="month-control" id="nextMonth">›</button>
-    <span class="role-pill" id="roleLabel">편집 권한: MD/마케팅</span>
+    <button class="ghost-button" id="inventoryButton" type="button">재고조회</button>
+    <span class="role-pill" id="roleLabel">부분뷰어 권한: 3PL 물류센터</span>
     <button class="ghost-button" id="changeAccessButton" type="button" style="">권한 변경</button>
-    <button class="primary-button" id="newPromotionButton" style="">프로모션 등록</button>
+    <button class="primary-button" id="newPromotionButton" style="display: none;">프로모션 등록</button>
   </div>
 </section>
 
@@ -265,7 +296,7 @@ textarea{min-height:80px;resize:vertical}
 </section>
 
 <section class="calendar-shell">
-  <div class="calendar-grid" id="calendarGrid"><div class="day-header">일</div><div class="day-header">월</div><div class="day-header">화</div><div class="day-header">수</div><div class="day-header">목</div><div class="day-header">금</div><div class="day-header">토</div><div class="week-header">주차 합계</div><div class="day-cell outside"><div class="date-row"><span class="date-number">26</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">27</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">30</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">1</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">2</span></div></div><div class="week-total"><div class="week-total-head"><span>1주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">3</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">6</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">7</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">8</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">9</span></div></div><div class="week-total"><div class="week-total-head"><span>2주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">10</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">11</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">12</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">13</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">14</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">15</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">16</span></div></div><div class="week-total"><div class="week-total-head"><span>3주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">17</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">18</span></div></div><div class="day-cell today"><div class="date-row"><span class="date-number">19</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">20</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">21</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">22</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">23</span></div></div><div class="week-total"><div class="week-total-head"><span>4주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">24</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">25</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1779177629512" style="background: rgb(229, 57, 53);"><span class="bar-title">네이버테스트</span><span class="bar-qty">100개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">26</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779177629512" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">27</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1779177629512" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">30</span></div></div><div class="week-total"><div class="week-total-head"><span>5주차 예상 출고</span><span class="week-total-sum">100개</span></div><div class="week-promo"><div class="week-promo-name">[네이버테스트]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) (100개)</div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">31</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"><span class="bar-title">[카카오] 톡딜</span><span class="bar-qty">1,900개</span></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">1</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">2</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">3</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">6</span></div></div><div class="week-total"><div class="week-total-head"><span>6주차 예상 출고</span><span class="week-total-sum">1,900개</span></div><div class="week-promo"><div class="week-promo-name">[[카카오] 톡딜]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) + [증정] 치즈 감자빵 1개입 (1,000개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) (500개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 토마토바질 감자빵 80g 6개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 두바이쫀득 감자빵 50g 5개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 고구마빵(4개입) (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) + [단품] 고구마빵(4개입) (100개)</div></div></div></div>
+  <div class="calendar-grid" id="calendarGrid"><div class="day-header">일</div><div class="day-header">월</div><div class="day-header">화</div><div class="day-header">수</div><div class="day-header">목</div><div class="day-header">금</div><div class="day-header">토</div><div class="week-header">주차 합계</div><div class="day-cell outside"><div class="date-row"><span class="date-number">26</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">27</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">30</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">1</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">2</span></div></div><div class="week-total"><div class="week-total-head"><span>1주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">3</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">6</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">7</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">8</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">9</span></div></div><div class="week-total"><div class="week-total-head"><span>2주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">10</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">11</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">12</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">13</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">14</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">15</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">16</span></div></div><div class="week-total"><div class="week-total-head"><span>3주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">17</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">18</span></div></div><div class="day-cell today"><div class="date-row"><span class="date-number">19</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">20</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">21</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">22</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">23</span></div></div><div class="week-total"><div class="week-total-head"><span>4주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">24</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">25</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1779177629512" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"><span class="bar-title">네이버 출고예정</span><span class="bar-qty">100개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">26</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779177629512" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">27</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1779177629512" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">30</span></div></div><div class="week-total"><div class="week-total-head"><span>5주차 예상 출고</span><span class="week-total-sum">100개</span></div><div class="week-promo"><div class="week-promo-name">[네이버 출고항목]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) (100개)</div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">31</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1778822436405" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"><span class="bar-title">출고 예정</span><span class="bar-qty">1,900개</span></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">1</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">2</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">3</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1778822436405" title="부분뷰어는 상세 팝업을 열 수 없습니다." style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">6</span></div></div><div class="week-total"><div class="week-total-head"><span>6주차 예상 출고</span><span class="week-total-sum">1,900개</span></div><div class="week-promo"><div class="week-promo-name">[출고 항목]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) + [증정] 치즈 감자빵 1개입 (1,000개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) (500개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 토마토바질 감자빵 80g 6개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 두바이쫀득 감자빵 50g 5개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 고구마빵(4개입) (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) + [단품] 고구마빵(4개입) (100개)</div></div></div></div>
 </section>
 </main>
 
@@ -309,8 +340,75 @@ textarea{min-height:80px;resize:vertical}
 </section>
 </div>
 
+<div class="modal-backdrop" id="inventoryBackdrop">
+<section class="modal inventory-modal">
+  <div class="modal-header">
+    <div>
+      <h2>재고조회</h2>
+      <div class="inventory-updated" id="inventoryUpdated">오류: Failed to fetch</div>
+    </div>
+    <div class="inventory-actions">
+      <button class="inventory-refresh-button" id="refreshInventoryButton" type="button">새로고침</button>
+      <button class="close-button" id="closeInventoryButton">×</button>
+    </div>
+  </div>
+  <div class="inventory-toolbar">
+    <label>검색<input id="inventorySearchInput" placeholder="상품명, 상품코드, 업체 품목코드"></label>
+    <label>재고 상태<select id="inventoryStockFilter">
+      <option value="all">전체</option>
+      <option value="in">재고 있음</option>
+      <option value="low">100개 미만</option>
+      <option value="out">품절</option>
+    </select></label>
+    <label>구분<select id="inventoryCategoryFilter">
+      <option value="all">전체</option>
+      <option value="판매상품">판매상품</option>
+      <option value="증정품">증정품</option>
+      <option value="부자재">부자재</option>
+      <option value="세트">세트</option>
+    </select></label>
+    <label>센터<select id="inventoryCenterFilter">
+      <option value="all">전체</option>
+    </select></label>
+    <div class="inventory-checks">
+      <label><input id="inventoryHideMaterial" type="checkbox" checked=""> 부자재 제외</label>
+      <label><input id="inventoryPromoOnly" type="checkbox"> 현재 달 프로모션 품목만</label>
+    </div>
+  </div>
+  <div class="inventory-summary">
+    <div class="inventory-kpi"><span>표시 품목</span><strong id="inventoryVisibleCount">0개</strong></div>
+    <div class="inventory-kpi"><span>총 재고</span><strong id="inventoryTotalStock">0</strong></div>
+    <div class="inventory-kpi"><span>가용 재고</span><strong id="inventoryAvailableStock">0</strong></div>
+    <div class="inventory-kpi"><span>부족/품절</span><strong id="inventoryRiskCount">0개</strong></div>
+  </div>
+  <div class="inventory-table-wrap">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>상품명</th>
+          <th>상품코드</th>
+          <th>업체 품목코드</th>
+          <th>센터</th>
+          <th>소비기한</th>
+          <th>로트번호</th>
+          <th>배치번호</th>
+          <th>재고상태</th>
+          <th class="sortable" data-sort-key="total_stock">재고 <span id="sortIcon_total_stock"></span></th>
+          <th class="sortable" data-sort-key="available_stock">가용 <span id="sortIcon_available_stock"></span></th>
+          <th class="sortable" data-sort-key="allocated_stock">할당 <span id="sortIcon_allocated_stock"></span></th>
+        </tr>
+      </thead>
+      <tbody id="inventoryTableBody"></tbody>
+    </table>
+    <div class="inventory-empty" id="inventoryEmpty" style="">조건에 맞는 재고가 없습니다.</div>
+  </div>
+</section>
+</div>
+
 <script>
 const API   = 'https://script.google.com/macros/s/AKfycbwama99AMKAZK_vxJkFf7PnxyTgd0t_INjMheflr2oR3zIoCeSQAoedsr9XlUWaipGFPw/exec';
+const INVENTORY_URL = 'inventory-latest.json';
 
 const ACCESS_CODES = {
   'batt1204': 'edit',
@@ -359,9 +457,13 @@ let state = {
   promotions: [],
   products: [], channels: [], owners: [],
   colorMap: {},
-  priceMap: {}
+  priceMap: {},
+  inventory: [],
+  inventoryUpdatedAt: ''
 };
 let isSaving = false;
+let inventoryLoaded = false;
+let inventorySort = {key:'',dir:'desc'};
 
 function getRoleConfig(){return ROLE_CONFIG[ROLE] || ROLE_CONFIG.external}
 function isEditRole(){return getRoleConfig().canEdit}
@@ -492,6 +594,180 @@ async function apiPost(body){
   const res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
   const r=await res.json();if(r.error)throw new Error(r.error);return r;
 }
+
+function normInventoryText(v){
+  return String(v||'').toLowerCase().replace(/\[[^\]]+\]/g,'').replace(/감자밭|밭\(주\)|파머스베이크샵/g,'').replace(/[^0-9a-z가-힣]/g,'');
+}
+function inventoryCategory(item){
+  const name=String(item.product_name||'');
+  const code=String(item.product_code||'');
+  const cat=String(item.category||item.product_type||item.product_group||'');
+  const hay=[name,code,cat].join(' ');
+  if(/부자재|박스|아이스팩|테이프|스티커|봉투|완충|포장/.test(hay))return '부자재';
+  if(/증정|사은|gift/i.test(hay))return '증정품';
+  if(/세트|set/i.test(hay))return '세트';
+  return '판매상품';
+}
+function stockBadge(item){
+  const available=Number(item.available_stock)||0;
+  if(available<=0)return {text:'품절',cls:'bad'};
+  if(available<100)return {text:'부족',cls:'warn'};
+  return {text:'가용',cls:'good'};
+}
+function currentPromoNames(){
+  const names=new Set();
+  getVisiblePromotions().forEach(p=>{
+    parseSku(p.product_name).forEach(row=>{
+      (row.items||[]).forEach(name=>names.add(normInventoryText(name)));
+    });
+  });
+  return [...names].filter(Boolean);
+}
+function isPromoInventoryItem(item,promoNames){
+  if(!promoNames.length)return false;
+  const hay=normInventoryText([item.product_name,item.product_code,item.company_code].join(' '));
+  return promoNames.some(name=>name && (hay.includes(name)||name.includes(hay)));
+}
+async function loadInventory(force=false){
+  if(inventoryLoaded&&!force)return;
+  const res=await fetch(`${INVENTORY_URL}?t=${Date.now()}`);
+  if(!res.ok)throw new Error('재고 파일을 불러오지 못했습니다.');
+  const data=await res.json();
+  const rows=Array.isArray(data.items)?data.items:[];
+  state.inventory=rows.map(row=>({
+    warehouse: row.warehouse || '',
+    center: row.center || row.plant_name || '',
+    owner: row.owner || '',
+    product_code: row.product_code || row.sales_product_code || '',
+    company_code: row.company_code || row.sales_product_company_code || '',
+    product_name: row.product_name || '',
+    barcode: row.barcode || '',
+    manufacturing_date: row.manufacturing_date || '',
+    expiration_date: row.expiration_date || '',
+    batch_no: row.batch_no || row.bat_no || '',
+    lot_no: row.lot_no || '',
+    received_date: row.received_date || '',
+    stock_status: row.stock_status_name || row.stock_status || '',
+    unit: row.unit || 'EA',
+    pack_qty: row.pack_qty || '',
+    total_stock: Number(row.total_stock ?? row.stock_qty ?? 0),
+    available_stock: Number(row.available_stock ?? 0),
+    allocated_stock: Number(row.allocated_stock ?? row.unavailable_stock ?? 0),
+    hold_stock: Number(row.hold_stock ?? 0),
+    unusable_stock: Number(row.unusable_stock ?? 0),
+    category: inventoryCategory(row),
+    updated_at: row.updated_at || data.generated_at || ''
+  }));
+  state.inventoryUpdatedAt=data.response_date || data.generated_at || '';
+  inventoryLoaded=true;
+}
+function syncInventoryCenters(){
+  const sel=document.getElementById('inventoryCenterFilter');
+  const current=sel.value;
+  const centers=[...new Set(state.inventory.map(x=>x.center).filter(Boolean))].sort();
+  sel.innerHTML='<option value="all">전체</option>';
+  centers.forEach(center=>{
+    const opt=document.createElement('option');
+    opt.value=opt.textContent=center;
+    sel.appendChild(opt);
+  });
+  if([...sel.options].some(opt=>opt.value===current))sel.value=current;
+}
+function filteredInventory(){
+  const q=normInventoryText(document.getElementById('inventorySearchInput').value);
+  const stock=document.getElementById('inventoryStockFilter').value;
+  const category=document.getElementById('inventoryCategoryFilter').value;
+  const center=document.getElementById('inventoryCenterFilter').value;
+  const hideMaterial=document.getElementById('inventoryHideMaterial').checked;
+  const promoOnly=document.getElementById('inventoryPromoOnly').checked;
+  const promoNames=promoOnly?currentPromoNames():[];
+  const rows=state.inventory.filter(item=>{
+    const cat=inventoryCategory(item);
+    if(hideMaterial&&cat==='부자재')return false;
+    if(category!=='all'&&cat!==category)return false;
+    if(center!=='all'&&item.center!==center)return false;
+    if(q&&!normInventoryText([item.product_name,item.product_code,item.company_code,item.barcode,item.expiration_date,item.lot_no,item.batch_no].join(' ')).includes(q))return false;
+    const available=Number(item.available_stock)||0;
+    if(stock==='in'&&available<=0)return false;
+    if(stock==='low'&&!(available>0&&available<100))return false;
+    if(stock==='out'&&available>0)return false;
+    if(promoOnly&&!isPromoInventoryItem(item,promoNames))return false;
+    return true;
+  });
+  if(inventorySort.key){
+    rows.sort((a,b)=>{
+      const av=Number(a[inventorySort.key]||0);
+      const bv=Number(b[inventorySort.key]||0);
+      return inventorySort.dir==='asc'?av-bv:bv-av;
+    });
+  }
+  return rows;
+}
+function renderInventorySortIcons(){
+  ['total_stock','available_stock','allocated_stock'].forEach(key=>{
+    const el=document.getElementById(`sortIcon_${key}`);
+    if(el)el.textContent=inventorySort.key===key?(inventorySort.dir==='asc'?'▲':'▼'):'';
+  });
+}
+function renderInventory(){
+  const rows=filteredInventory();
+  renderInventorySortIcons();
+  document.getElementById('inventoryUpdated').textContent=state.inventoryUpdatedAt?`최종 갱신: ${state.inventoryUpdatedAt}`:'최종 갱신 정보 없음';
+  document.getElementById('inventoryVisibleCount').textContent=num(rows.length)+'개';
+  document.getElementById('inventoryTotalStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.total_stock)||0),0));
+  document.getElementById('inventoryAvailableStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.available_stock)||0),0));
+  document.getElementById('inventoryRiskCount').textContent=num(rows.filter(r=>(Number(r.available_stock)||0)<100).length)+'개';
+  const body=document.getElementById('inventoryTableBody');
+  const empty=document.getElementById('inventoryEmpty');
+  body.innerHTML='';
+  empty.style.display=rows.length?'none':'';
+  rows.forEach(item=>{
+    const tr=document.createElement('tr');
+    const badge=stockBadge(item);
+    [
+      {text:inventoryCategory(item),badge:'inventory-badge'},
+      {text:item.product_name,cls:'product-cell'},
+      {text:item.product_code},
+      {text:item.company_code},
+      {text:item.center},
+      {text:item.expiration_date||'-'},
+      {text:item.lot_no||'-'},
+      {text:item.batch_no||'-'},
+      {text:badge.text,badge:`inventory-badge ${badge.cls}`},
+      {text:num(item.total_stock),cls:'num-cell'},
+      {text:num(item.available_stock),cls:'num-cell'},
+      {text:num(item.allocated_stock),cls:'num-cell'}
+    ].forEach(cell=>{
+      const td=document.createElement('td');
+      if(cell.cls)td.className=cell.cls;
+      if(cell.badge)td.appendChild(el('span',cell.badge,cell.text));
+      else td.textContent=cell.text;
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+async function refreshInventory(){
+  const btn=document.getElementById('refreshInventoryButton');
+  btn.disabled=true;
+  document.getElementById('inventoryUpdated').textContent='최신 재고를 불러오는 중...';
+  try{
+    await loadInventory(true);
+    syncInventoryCenters();
+    renderInventory();
+  }catch(err){
+    state.inventory=[];
+    renderInventory();
+    document.getElementById('inventoryUpdated').textContent='오류: '+err.message;
+  }finally{
+    btn.disabled=false;
+  }
+}
+async function openInventoryModal(){
+  document.getElementById('inventoryBackdrop').classList.add('open');
+  await refreshInventory();
+}
+function closeInventoryModal(){document.getElementById('inventoryBackdrop').classList.remove('open')}
 
 function showSaving(){document.getElementById('savingOverlay').classList.add('open');document.getElementById('submitButton').disabled=true;document.getElementById('deleteButton').disabled=true}
 function hideSaving(){document.getElementById('savingOverlay').classList.remove('open');document.getElementById('submitButton').disabled=false;document.getElementById('deleteButton').disabled=false}
@@ -952,6 +1228,20 @@ function closeModal(){modalEl.classList.remove('open')}
 document.getElementById('newPromotionButton').onclick=openNewModal;
 document.getElementById('closeModalButton').onclick=closeModal;
 document.getElementById('cancelButton').onclick=closeModal;
+document.getElementById('inventoryButton').onclick=openInventoryModal;
+document.getElementById('refreshInventoryButton').onclick=refreshInventory;
+document.getElementById('closeInventoryButton').onclick=closeInventoryModal;
+document.querySelectorAll('.inventory-table th.sortable').forEach(th=>{
+  th.onclick=()=>{
+    const key=th.dataset.sortKey;
+    inventorySort={key,dir:inventorySort.key===key&&inventorySort.dir==='desc'?'asc':'desc'};
+    renderInventory();
+  };
+});
+['inventorySearchInput','inventoryStockFilter','inventoryCategoryFilter','inventoryCenterFilter','inventoryHideMaterial','inventoryPromoOnly'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',renderInventory);
+  document.getElementById(id).addEventListener('change',renderInventory);
+});
 document.getElementById('prevMonth').onclick=()=>{state.visibleDate.setMonth(state.visibleDate.getMonth()-1);renderAll()};
 document.getElementById('nextMonth').onclick=()=>{state.visibleDate.setMonth(state.visibleDate.getMonth()+1);renderAll()};
 document.getElementById('addSkuRowBtn').onclick=()=>{
