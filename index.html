@@ -373,13 +373,20 @@ textarea{min-height:80px;resize:vertical}
     <div class="inventory-checks">
       <label><input id="inventoryHideMaterial" type="checkbox" checked=""> 부자재 제외</label>
       <label><input id="inventoryPromoOnly" type="checkbox"> 현재 달 프로모션 품목만</label>
+      <label>일평균 기준
+        <select id="inventoryAvgWindow">
+          <option value="7">최근 7일</option>
+          <option value="14" selected="">최근 14일</option>
+          <option value="30">최근 30일</option>
+        </select>
+      </label>
     </div>
   </div>
   <div class="inventory-summary">
     <div class="inventory-kpi"><span>표시 품목</span><strong id="inventoryVisibleCount">0개</strong></div>
     <div class="inventory-kpi"><span>총 재고</span><strong id="inventoryTotalStock">0</strong></div>
     <div class="inventory-kpi"><span>가용 재고</span><strong id="inventoryAvailableStock">0</strong></div>
-    <div class="inventory-kpi"><span>부족/품절</span><strong id="inventoryRiskCount">0개</strong></div>
+    <div class="inventory-kpi"><span>발주 필요(리드타임)</span><strong id="inventoryRiskCount">0개</strong></div>
   </div>
   <div class="inventory-table-wrap">
     <table class="inventory-table">
@@ -397,6 +404,9 @@ textarea{min-height:80px;resize:vertical}
           <th class="sortable" data-sort-key="total_stock">재고 <span id="sortIcon_total_stock"></span></th>
           <th class="sortable" data-sort-key="available_stock">가용 <span id="sortIcon_available_stock"></span></th>
           <th class="sortable" data-sort-key="allocated_stock">할당 <span id="sortIcon_allocated_stock"></span></th>
+          <th>출고 7·14·30</th>
+          <th>소진예상</th>
+          <th>경고</th>
         </tr>
       </thead>
       <tbody id="inventoryTableBody"></tbody>
@@ -459,7 +469,8 @@ let state = {
   colorMap: {},
   priceMap: {},
   inventory: [],
-  inventoryUpdatedAt: ''
+  inventoryUpdatedAt: '',
+  outbound: {items:[],anchorDate:'',updatedAt:''}
 };
 let isSaving = false;
 let inventoryLoaded = false;
@@ -588,6 +599,7 @@ async function loadData(){
   });
   state.channels=data.channels||[];
   state.owners=data.owners||[];
+  state.outbound=data.outbound||{items:[],anchorDate:'',updatedAt:''};
   assignColors();
 }
 async function apiPost(body){
@@ -661,6 +673,34 @@ async function loadInventory(force=false){
   state.inventoryUpdatedAt=data.response_date || data.generated_at || '';
   inventoryLoaded=true;
 }
+function avgWindowDays(){
+  return Number((document.getElementById('inventoryAvgWindow')||{}).value)||14;
+}
+// product_code별 가용재고 합계 (lot 여러 행을 합침)
+function availableByCode(){
+  const m={};
+  state.inventory.forEach(it=>{
+    const c=it.product_code;if(!c)return;
+    m[c]=(m[c]||0)+(Number(it.available_stock)||0);
+  });
+  return m;
+}
+// product_code → 출고량 {d7,d14,d30} (캘린더 API outbound 응답)
+function outboundByCode(){
+  const m={};
+  ((state.outbound&&state.outbound.items)||[]).forEach(o=>{
+    const c=String(o.product_code||'').trim();if(!c)return;
+    m[c]={d7:Number(o.d7)||0,d14:Number(o.d14)||0,d30:Number(o.d30)||0};
+  });
+  return m;
+}
+// 빨강 기준선 = 최근 14일 일평균 × 21 (3주치). 가용재고가 이보다 낮으면 발주 필요.
+function skuRedLine(d14){return (Number(d14)||0)/14*21;}
+const WARN_BADGE={
+  bad:{t:'🔴 발주',c:'bad'},
+  good:{t:'🟢 정상',c:'good'},
+  none:{t:'⚪ 출고없음',c:''}
+};
 function syncInventoryCenters(){
   const sel=document.getElementById('inventoryCenterFilter');
   const current=sel.value;
@@ -712,11 +752,24 @@ function renderInventorySortIcons(){
 function renderInventory(){
   const rows=filteredInventory();
   renderInventorySortIcons();
-  document.getElementById('inventoryUpdated').textContent=state.inventoryUpdatedAt?`최종 갱신: ${state.inventoryUpdatedAt}`:'최종 갱신 정보 없음';
+  const win=avgWindowDays();
+  const availByCode=availableByCode();
+  const outByCode=outboundByCode();
+  const anchor=(state.outbound&&state.outbound.anchorDate)||'';
+  document.getElementById('inventoryUpdated').textContent=
+    (state.inventoryUpdatedAt?`최종 갱신: ${state.inventoryUpdatedAt}`:'최종 갱신 정보 없음')
+    +(anchor?` · 출고 반영일: ${anchor}`:'');
   document.getElementById('inventoryVisibleCount').textContent=num(rows.length)+'개';
   document.getElementById('inventoryTotalStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.total_stock)||0),0));
   document.getElementById('inventoryAvailableStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.available_stock)||0),0));
-  document.getElementById('inventoryRiskCount').textContent=num(rows.filter(r=>(Number(r.available_stock)||0)<100).length)+'개';
+  // 발주 필요 KPI: 표시 중인 product_code 중 빨강 SKU 수(중복 제거)
+  const warnCodes=new Set();
+  rows.forEach(item=>{
+    const o=outByCode[item.product_code];
+    if(!o||o.d14<=0)return;
+    if((availByCode[item.product_code]||0)<skuRedLine(o.d14))warnCodes.add(item.product_code);
+  });
+  document.getElementById('inventoryRiskCount').textContent=num(warnCodes.size)+'개';
   const body=document.getElementById('inventoryTableBody');
   const empty=document.getElementById('inventoryEmpty');
   body.innerHTML='';
@@ -724,6 +777,17 @@ function renderInventory(){
   rows.forEach(item=>{
     const tr=document.createElement('tr');
     const badge=stockBadge(item);
+    const o=outByCode[item.product_code];
+    let outText='-',coverText='-',warnCell={text:'-'};
+    if(o){
+      outText=`${num(o.d7)} / ${num(o.d14)} / ${num(o.d30)}`;
+      const avail=availByCode[item.product_code]||0;
+      const avg=(o['d'+win]||0)/win;
+      coverText=avg>0?(avail/avg).toFixed(1)+'일':'출고없음';
+      const grade=o.d14<=0?'none':(avail<skuRedLine(o.d14)?'bad':'good');
+      const wb=WARN_BADGE[grade];
+      warnCell={text:wb.t,badge:`inventory-badge ${wb.c}`};
+    }
     [
       {text:inventoryCategory(item),badge:'inventory-badge'},
       {text:item.product_name,cls:'product-cell'},
@@ -736,7 +800,10 @@ function renderInventory(){
       {text:badge.text,badge:`inventory-badge ${badge.cls}`},
       {text:num(item.total_stock),cls:'num-cell'},
       {text:num(item.available_stock),cls:'num-cell'},
-      {text:num(item.allocated_stock),cls:'num-cell'}
+      {text:num(item.allocated_stock),cls:'num-cell'},
+      {text:outText,cls:'num-cell'},
+      {text:coverText,cls:'num-cell'},
+      warnCell
     ].forEach(cell=>{
       const td=document.createElement('td');
       if(cell.cls)td.className=cell.cls;
@@ -1238,7 +1305,7 @@ document.querySelectorAll('.inventory-table th.sortable').forEach(th=>{
     renderInventory();
   };
 });
-['inventorySearchInput','inventoryStockFilter','inventoryCategoryFilter','inventoryCenterFilter','inventoryHideMaterial','inventoryPromoOnly'].forEach(id=>{
+['inventorySearchInput','inventoryStockFilter','inventoryCategoryFilter','inventoryCenterFilter','inventoryHideMaterial','inventoryPromoOnly','inventoryAvgWindow'].forEach(id=>{
   document.getElementById(id).addEventListener('input',renderInventory);
   document.getElementById(id).addEventListener('change',renderInventory);
 });
