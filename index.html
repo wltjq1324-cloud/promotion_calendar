@@ -419,9 +419,6 @@ textarea{min-height:80px;resize:vertical}
 <script>
 const API   = 'https://script.google.com/macros/s/AKfycbwama99AMKAZK_vxJkFf7PnxyTgd0t_INjMheflr2oR3zIoCeSQAoedsr9XlUWaipGFPw/exec';
 const INVENTORY_URL = 'inventory-latest.json';
-// 대시보드 Apps Script 웹앱 /exec URL. ?mode=outbound로 SKU별 출고량을 받는다.
-// 미설정('') 시 출고/소진예상/경고 컬럼은 '-'로 표시되고 기능만 비활성화된다.
-const OUTBOUND_URL = '';
 
 const ACCESS_CODES = {
   'batt1204': 'edit',
@@ -473,8 +470,7 @@ let state = {
   priceMap: {},
   inventory: [],
   inventoryUpdatedAt: '',
-  outbound: {},
-  outboundMeta: {}
+  outbound: {items:[],anchorDate:'',updatedAt:''}
 };
 let isSaving = false;
 let inventoryLoaded = false;
@@ -603,6 +599,7 @@ async function loadData(){
   });
   state.channels=data.channels||[];
   state.owners=data.owners||[];
+  state.outbound=data.outbound||{items:[],anchorDate:'',updatedAt:''};
   assignColors();
 }
 async function apiPost(body){
@@ -676,18 +673,6 @@ async function loadInventory(force=false){
   state.inventoryUpdatedAt=data.response_date || data.generated_at || '';
   inventoryLoaded=true;
 }
-async function loadOutbound(){
-  if(!OUTBOUND_URL){state.outbound={};state.outboundMeta={};return;}
-  try{
-    const res=await fetch(`${OUTBOUND_URL}?mode=outbound&t=${Date.now()}`);
-    if(!res.ok)throw new Error('출고 데이터 응답 오류');
-    const data=await res.json();
-    state.outbound=(data&&data.items)?data.items:{};
-    state.outboundMeta=(data&&data.meta)?data.meta:{};
-  }catch(err){
-    state.outbound={};state.outboundMeta={};
-  }
-}
 function avgWindowDays(){
   return Number((document.getElementById('inventoryAvgWindow')||{}).value)||14;
 }
@@ -700,18 +685,19 @@ function availableByCode(){
   });
   return m;
 }
-// 리드타임 고려 소진 경고. avail=가용재고, out=윈도우 출고량, windowDays=7/14/30
-function skuWarning(avail,out,leadTime,safetyDays,windowDays){
-  const avg=(Number(out)||0)/windowDays;
-  if(avg<=0)return{grade:'none',days:Infinity,avg:0};
-  const days=avail/avg;
-  if(days<=leadTime)return{grade:'bad',days,avg};
-  if(days<=leadTime+safetyDays)return{grade:'warn',days,avg};
-  return{grade:'good',days,avg};
+// product_code → 출고량 {d7,d14,d30} (캘린더 API outbound 응답)
+function outboundByCode(){
+  const m={};
+  ((state.outbound&&state.outbound.items)||[]).forEach(o=>{
+    const c=String(o.product_code||'').trim();if(!c)return;
+    m[c]={d7:Number(o.d7)||0,d14:Number(o.d14)||0,d30:Number(o.d30)||0};
+  });
+  return m;
 }
+// 빨강 기준선 = 최근 14일 일평균 × 21 (3주치). 가용재고가 이보다 낮으면 발주 필요.
+function skuRedLine(d14){return (Number(d14)||0)/14*21;}
 const WARN_BADGE={
-  bad:{t:'🔴 위험',c:'bad'},
-  warn:{t:'🟡 주의',c:'warn'},
+  bad:{t:'🔴 발주',c:'bad'},
   good:{t:'🟢 정상',c:'good'},
   none:{t:'⚪ 출고없음',c:''}
 };
@@ -768,17 +754,20 @@ function renderInventory(){
   renderInventorySortIcons();
   const win=avgWindowDays();
   const availByCode=availableByCode();
-  document.getElementById('inventoryUpdated').textContent=state.inventoryUpdatedAt?`최종 갱신: ${state.inventoryUpdatedAt}`:'최종 갱신 정보 없음';
+  const outByCode=outboundByCode();
+  const anchor=(state.outbound&&state.outbound.anchorDate)||'';
+  document.getElementById('inventoryUpdated').textContent=
+    (state.inventoryUpdatedAt?`최종 갱신: ${state.inventoryUpdatedAt}`:'최종 갱신 정보 없음')
+    +(anchor?` · 출고 반영일: ${anchor}`:'');
   document.getElementById('inventoryVisibleCount').textContent=num(rows.length)+'개';
   document.getElementById('inventoryTotalStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.total_stock)||0),0));
   document.getElementById('inventoryAvailableStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.available_stock)||0),0));
-  // 발주 필요 KPI: 표시 중인 행의 product_code 중 🔴/🟡 등급 SKU 수(중복 제거)
+  // 발주 필요 KPI: 표시 중인 product_code 중 빨강 SKU 수(중복 제거)
   const warnCodes=new Set();
   rows.forEach(item=>{
-    const o=state.outbound[item.product_code];
-    if(!o)return;
-    const w=skuWarning(availByCode[item.product_code]||0,o['d'+win],o.leadTime,o.safetyDays,win);
-    if(w.grade==='bad'||w.grade==='warn')warnCodes.add(item.product_code);
+    const o=outByCode[item.product_code];
+    if(!o||o.d14<=0)return;
+    if((availByCode[item.product_code]||0)<skuRedLine(o.d14))warnCodes.add(item.product_code);
   });
   document.getElementById('inventoryRiskCount').textContent=num(warnCodes.size)+'개';
   const body=document.getElementById('inventoryTableBody');
@@ -788,13 +777,15 @@ function renderInventory(){
   rows.forEach(item=>{
     const tr=document.createElement('tr');
     const badge=stockBadge(item);
-    const o=state.outbound[item.product_code];
+    const o=outByCode[item.product_code];
     let outText='-',coverText='-',warnCell={text:'-'};
     if(o){
       outText=`${num(o.d7)} / ${num(o.d14)} / ${num(o.d30)}`;
-      const w=skuWarning(availByCode[item.product_code]||0,o['d'+win],o.leadTime,o.safetyDays,win);
-      coverText=isFinite(w.days)?w.days.toFixed(1)+'일':'-';
-      const wb=WARN_BADGE[w.grade];
+      const avail=availByCode[item.product_code]||0;
+      const avg=(o['d'+win]||0)/win;
+      coverText=avg>0?(avail/avg).toFixed(1)+'일':'출고없음';
+      const grade=o.d14<=0?'none':(avail<skuRedLine(o.d14)?'bad':'good');
+      const wb=WARN_BADGE[grade];
       warnCell={text:wb.t,badge:`inventory-badge ${wb.c}`};
     }
     [
@@ -829,7 +820,6 @@ async function refreshInventory(){
   document.getElementById('inventoryUpdated').textContent='최신 재고를 불러오는 중...';
   try{
     await loadInventory(true);
-    await loadOutbound();
     syncInventoryCenters();
     renderInventory();
   }catch(err){
