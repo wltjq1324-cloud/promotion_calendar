@@ -1,21 +1,27 @@
 // ============================================================
-// 아워박스 MVP 대시보드 — Apps Script v3.4
+// 아워박스 MVP 대시보드 — Apps Script v3.5
 // ============================================================
 // v3.3 유지:
 //   - map_channel E열 "담당자" 읽기
 //   - 가공_데이터 17열 "담당자" 추가
 //   - JSON orders에 manager 필드 포함
 //
-// v3.4 추가:
-//   - 기존 대시보드 보호: 기본 doGet()은 기존 orders 응답 유지
+// v3.4 유지:
+//   - 기본 doGet()은 기존 orders 응답 유지
 //   - 새 대시보드만 ?mode=cache로 dashboard_cache 요약 응답 사용
-//   - refreshProcessedData() 실행 시 dashboard_cache 숨김 시트 자동 생성/갱신
+//   - refreshProcessedData() 실행 시 dashboard_cache 숨김 시트 함께 갱신(단일 버튼)
 //
-// 성능 수정:
-//   - writeDashboardCache_: 거대 json 셀에 대한 autoResizeColumns 제거 (수 분 소요)
-//   - setValuesChunked_: 청크마다의 flush 제거 (호출부에서 1회만 flush)
-//   - updateMappingStatus: 행별 setNumberFormat 루프 → 1회 일괄 적용
+// v3.5 변경:
+//   - 성능: writeDashboardCache_의 autoResizeColumns 제거(거대 json 셀로 수 분 소요)
+//   - 성능: setValuesChunked_ 청크마다의 flush 제거
+//   - 성능: updateMappingStatus 행별 setNumberFormat → 1회 일괄 적용
+//   - 안정성: refreshProcessedData를 LockService로 보호(동시 실행 방지)
+//   - UX: 메뉴 실행 결과를 alert로 표시(notifyUser_)
+//   - 장기 누적: 행 수가 임계치를 넘으면 경고 메시지 표시
 // ============================================================
+
+// 가공_데이터 행 수가 이 값을 넘으면 갱신 완료 메시지에 경고를 덧붙입니다.
+var ROW_WARN_THRESHOLD = 150000;
 
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -49,10 +55,40 @@ function doGet(e) {
   }
 }
 
+// 메뉴 실행 결과를 사용자에게 표시합니다.
+// UI가 없는 컨텍스트(시간 기반 트리거 등)에서는 alert가 실패하므로 무시합니다.
+function notifyUser_(msg) {
+  Logger.log(msg);
+  try {
+    SpreadsheetApp.getUi().alert(msg);
+  } catch (err) {
+    // UI 컨텍스트 없음 — 로그만 남깁니다.
+  }
+}
+
 // ============================================================
 // 가공_데이터 자동 생성/갱신
 // ============================================================
 function refreshProcessedData() {
+  // 동시 실행 방지: 갱신 중 재실행하면 깨진 시트가 노출될 수 있습니다.
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(2000)) {
+    notifyUser_('⚠️ 이미 갱신이 진행 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  try {
+    var msg = refreshProcessedDataCore_();
+    notifyUser_(msg);
+  } catch (err) {
+    notifyUser_('❌ 가공_데이터 갱신 실패\n\n' + err.message);
+    throw err;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function refreshProcessedDataCore_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var rawSheet = ss.getSheetByName('raw_orders');
   if (!rawSheet || rawSheet.getLastRow() < 2) {
@@ -146,7 +182,7 @@ function refreshProcessedData() {
 
   SpreadsheetApp.flush();
 
-  // 7. v3.4: 새 대시보드용 요약 캐시 생성
+  // 7. 새 대시보드용 요약 캐시 생성 (단일 버튼 — 가공+캐시 항상 함께)
   var cacheStats = refreshDashboardCache(ss, rows);
 
   var distinctOrders = Object.keys(seenOrders).length;
@@ -166,8 +202,13 @@ function refreshProcessedData() {
     msg += '\n\n→ map_product에서 표준품목명/상품군을 입력해주세요.';
   }
 
-  msg += '\n갱신 시각: ' + new Date().toLocaleString('ko-KR');
-  Logger.log(msg);
+  if (rows.length > ROW_WARN_THRESHOLD) {
+    msg += '\n\n⚠️ 행 수(' + rows.length + ')가 많아 갱신이 Apps Script 6분 제한에' +
+      ' 근접할 수 있습니다.\n오래된 주문은 별도 시트로 분리(아카이브)를 검토하세요.';
+  }
+
+  msg += '\n\n갱신 시각: ' + new Date().toLocaleString('ko-KR');
+  return msg;
 }
 
 // ============================================================
@@ -379,7 +420,7 @@ function readProcessedSheet(sheet) {
       source: '가공_데이터',
       rows: orders.length,
       timestamp: new Date().toISOString(),
-      version: 'v3.4'
+      version: 'v3.5'
     }
   };
 }
@@ -448,24 +489,38 @@ function buildFromRawFallback(ss) {
       source: 'raw_orders+매핑(폴백)',
       rows: orders.length,
       timestamp: new Date().toISOString(),
-      version: 'v3.4'
+      version: 'v3.5'
     }
   };
 }
 
 // ============================================================
-// v3.4: 대시보드 요약 캐시
+// 대시보드 요약 캐시
 // ============================================================
 function refreshDashboardCacheMenu() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var stats = refreshDashboardCache(ss);
-  Logger.log(
-    '대시보드 캐시 갱신 완료\n' +
-    '원본 행 수: ' + stats.rawRows + '건\n' +
-    'baseRows: ' + stats.baseRows + '행\n' +
-    'productRows: ' + stats.productRows + '행\n' +
-    'qualityRows: ' + stats.qualityRows + '행'
-  );
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(2000)) {
+    notifyUser_('⚠️ 이미 갱신이 진행 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var stats = refreshDashboardCache(ss);
+    notifyUser_(
+      '✅ 대시보드 캐시 갱신 완료\n\n' +
+      '원본 행 수: ' + stats.rawRows + '건\n' +
+      'baseRows: ' + stats.baseRows + '행\n' +
+      'productRows: ' + stats.productRows + '행\n' +
+      'qualityRows: ' + stats.qualityRows + '행\n\n' +
+      '갱신 시각: ' + new Date().toLocaleString('ko-KR')
+    );
+  } catch (err) {
+    notifyUser_('❌ 대시보드 캐시 갱신 실패\n\n' + err.message);
+    throw err;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function getDashboardCache() {
@@ -582,7 +637,7 @@ function buildDashboardCacheFromOrders_(orders) {
   var productRows = finalizeAgg_(productMap);
   var meta = {
     source: 'dashboard_cache',
-    version: 'v3.4',
+    version: 'v3.5',
     generatedAt: new Date().toISOString(),
     rawRows: orders.length,
     baseRows: baseRows.length,
@@ -913,17 +968,18 @@ function fmtDate(d) {
 
 function testGetData() {
   var r = getProcessedData();
-  Logger.log('총 행: ' + r.orders.length);
+  var lines = [];
+  lines.push('총 행: ' + r.orders.length);
 
   var ids = {};
   for (var i = 0; i < r.orders.length; i++) {
     ids[r.orders[i].id] = true;
   }
-  Logger.log('고유 주문: ' + Object.keys(ids).length);
+  lines.push('고유 주문: ' + Object.keys(ids).length);
 
   if (r.orders.length > 0) {
     var o = r.orders[0];
-    Logger.log(
+    lines.push(
       '첫번째: 매출=' + o.revenue +
       ' 정산=' + o.settlement +
       ' 원가=' + o.cost +
@@ -934,13 +990,13 @@ function testGetData() {
     );
   }
 
-  Logger.log('미매핑: ' + r.unmapped.length + '건');
+  lines.push('미매핑: ' + r.unmapped.length + '건');
   if (r.unmapped.length > 0) {
     Logger.log('미매핑 예시: ' + JSON.stringify(r.unmapped.slice(0, 3)));
   }
 
   var cache = getDashboardCache();
-  Logger.log('캐시 meta: ' + JSON.stringify(cache.meta));
+  lines.push('캐시 meta: ' + JSON.stringify(cache.meta));
 
   var mgrAgg = {};
   for (var j = 0; j < r.orders.length; j++) {
@@ -949,5 +1005,7 @@ function testGetData() {
     mgrAgg[mgr].rev += r.orders[j].revenue;
     mgrAgg[mgr].cnt++;
   }
-  Logger.log('담당자별: ' + JSON.stringify(mgrAgg));
+  lines.push('담당자별: ' + JSON.stringify(mgrAgg));
+
+  notifyUser_('📋 데이터 확인\n\n' + lines.join('\n'));
 }
