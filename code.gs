@@ -41,8 +41,6 @@ function doGet(e) {
     // 새 HTML에서만 ?mode=cache를 붙여 요약 캐시를 받습니다.
     if (params.mode === 'cache') {
       data = getDashboardCache();
-    } else if (params.mode === 'outbound') {
-      data = getOutboundSummary();
     } else {
       data = getProcessedData();
     }
@@ -187,13 +185,18 @@ function refreshProcessedDataCore_() {
   // 7. 새 대시보드용 요약 캐시 생성 (단일 버튼 — 가공+캐시 항상 함께)
   var cacheStats = refreshDashboardCache(ss, rows);
 
+  // 8. 프로모션 캘린더용 SKU 출고요약 시트 생성
+  var outStats = buildOutboundSheet_(ss);
+
   var distinctOrders = Object.keys(seenOrders).length;
   var msg = '✅ 가공_데이터 갱신 완료!\n\n' +
     '처리 행 수: ' + rows.length + '건\n' +
     '고유 주문 수: ' + distinctOrders + '건\n' +
     '요약 캐시: base ' + cacheStats.baseRows +
     ' / product ' + cacheStats.productRows +
-    ' / quality ' + cacheStats.qualityRows + '행\n';
+    ' / quality ' + cacheStats.qualityRows + '행\n' +
+    '출고요약: ' + outStats.rows + ' SKU' +
+    (outStats.anchorDate ? ' (기준일 ' + outStats.anchorDate + ')' : '') + '\n';
 
   if (newItems.length > 0) {
     var previewItems = newItems.slice(0, 20);
@@ -838,81 +841,9 @@ function p2_(value) {
 
 // ============================================================
 // SKU 출고량 요약 (프로모션 캘린더 재고 경고용)
-// ?mode=outbound — 가공_데이터에서 최근 7/14/30일 출고량을 SKU별로 집계
+// raw_orders를 세트 구성단품으로 분해해 SKU별 7/14/30일 출고량을
+// 집계하고 '출고요약' 시트에 기록한다. 캘린더 시트가 IMPORTRANGE로 가져간다.
 // ============================================================
-function getOutboundSummary() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('가공_데이터');
-  var emptyMeta = { source: '가공_데이터', rows: 0, version: 'v3.5' };
-  if (!sheet || sheet.getLastRow() < 2) {
-    return { items: {}, meta: emptyMeta };
-  }
-
-  // 3열 수량, 8열 주문일, 10열 표준품목명
-  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
-
-  // 기준일(anchor) = 데이터 내 최신 주문일 (수기 입력 지연을 흡수)
-  var anchor = '';
-  for (var i = 0; i < data.length; i++) {
-    var d = normalizeDateOnly_(data[i][7]);
-    if (d && d > anchor) anchor = d;
-  }
-  if (!anchor) return { items: {}, meta: emptyMeta };
-  var anchorMs = dateMs_(anchor);
-
-  // 표준품목명별 d7/d14/d30 집계 (최근 30일만)
-  var byStd = {};
-  for (var j = 0; j < data.length; j++) {
-    var std = String(data[j][9] || '').trim();
-    var dateStr = normalizeDateOnly_(data[j][7]);
-    var qty = Number(data[j][2]) || 0;
-    if (!std || !dateStr || qty <= 0) continue;
-
-    var diff = Math.floor((anchorMs - dateMs_(dateStr)) / 86400000);
-    if (diff < 0 || diff >= 30) continue;
-
-    if (!byStd[std]) byStd[std] = { d7: 0, d14: 0, d30: 0 };
-    if (diff < 7) byStd[std].d7 += qty;
-    if (diff < 14) byStd[std].d14 += qty;
-    byStd[std].d30 += qty;
-  }
-
-  // sku_master로 표준품목명 → product_code 결합.
-  // 여러 표준품목명이 같은 product_code면 출고량을 합산한다.
-  var skuMap = loadSkuMaster_(ss);
-  var items = {};
-  for (var stdName in skuMap) {
-    var sku = skuMap[stdName];
-    var agg = byStd[stdName] || { d7: 0, d14: 0, d30: 0 };
-    var it = items[sku.productCode];
-    if (!it) {
-      it = items[sku.productCode] = {
-        productCode: sku.productCode,
-        stdNames: [],
-        d7: 0, d14: 0, d30: 0,
-        leadTime: sku.leadTime,
-        safetyDays: sku.safetyDays
-      };
-    }
-    it.stdNames.push(stdName);
-    it.d7 += agg.d7;
-    it.d14 += agg.d14;
-    it.d30 += agg.d30;
-    it.leadTime = Math.max(it.leadTime, sku.leadTime);
-    it.safetyDays = Math.max(it.safetyDays, sku.safetyDays);
-  }
-
-  return {
-    items: items,
-    meta: {
-      source: '가공_데이터',
-      anchorDate: anchor,
-      windowDays: 30,
-      generatedAt: new Date().toISOString(),
-      version: 'v3.5'
-    }
-  };
-}
 
 // 'YYYY-MM-DD' → UTC 자정 ms (날짜 차이 계산용)
 function dateMs_(ymd) {
@@ -920,24 +851,103 @@ function dateMs_(ymd) {
   return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
 }
 
-// sku_master 시트: 표준품목명 | product_code | 리드타임 | 안전일수
+// "오리지널 10개입 * 3, 오리지널 4개입"
+//   → [{name:'오리지널 10개입', qty:3}, {name:'오리지널 4개입', qty:1}]
+function expandComponents_(text) {
+  return String(text || '').split(',').map(function (t) {
+    var m = t.split('*');
+    return { name: m[0].trim(), qty: m[1] ? (parseInt(m[1], 10) || 1) : 1 };
+  }).filter(function (c) { return c.name; });
+}
+
+// sku_master 시트: SKU 이름 | product_code
 function loadSkuMaster_(ss) {
   var m = {};
   var s = ss.getSheetByName('sku_master');
   if (!s || s.getLastRow() < 2) return m;
 
-  var d = s.getRange(2, 1, s.getLastRow() - 1, 4).getValues();
+  var d = s.getRange(2, 1, s.getLastRow() - 1, 2).getValues();
   for (var i = 0; i < d.length; i++) {
-    var std = String(d[i][0] || '').trim();
+    var name = String(d[i][0] || '').trim();
     var code = String(d[i][1] || '').trim();
-    if (!std || !code) continue;
-    m[std] = {
-      productCode: code,
-      leadTime: Number(d[i][2]) || 0,
-      safetyDays: Number(d[i][3]) || 0
-    };
+    if (name && code) m[name] = code;
   }
   return m;
+}
+
+// '출고요약' 시트 생성/갱신.
+function buildOutboundSheet_(ss) {
+  var rawSheet = ss.getSheetByName('raw_orders');
+  if (!rawSheet || rawSheet.getLastRow() < 2) return { rows: 0 };
+
+  var rawData = rawSheet.getRange(2, 1, rawSheet.getLastRow() - 1, 7).getValues();
+  var prMap = loadProductMap(ss);
+  var skuMap = loadSkuMaster_(ss);
+
+  // 기준일(anchor) = raw_orders 최신 주문일 (수기 입력 지연 흡수)
+  var anchor = '';
+  var parsed = [];
+  for (var i = 0; i < rawData.length; i++) {
+    var dateStr = parseAnyDate(rawData[i][6]);
+    dateStr = dateStr ? dateStr.substring(0, 10) : '';
+    parsed.push(dateStr);
+    if (dateStr && dateStr > anchor) anchor = dateStr;
+  }
+  if (!anchor) return { rows: 0 };
+  var anchorMs = dateMs_(anchor);
+
+  // product_code별 d7/d14/d30 집계 (세트는 구성단품으로 분해)
+  var agg = {};
+  for (var j = 0; j < rawData.length; j++) {
+    var dateStr2 = parsed[j];
+    if (!dateStr2) continue;
+    var diff = Math.floor((anchorMs - dateMs_(dateStr2)) / 86400000);
+    if (diff < 0 || diff >= 30) continue;
+
+    var itemName = String(rawData[j][1] || '').trim();
+    var qty = Number(rawData[j][2]) || 0;
+    if (!itemName || qty <= 0) continue;
+
+    var pr = prMap[itemName];
+    var src = (pr && pr.parts) ? pr.parts : (pr ? pr.std : itemName);
+    var comps = expandComponents_(src);
+
+    for (var c = 0; c < comps.length; c++) {
+      var code = skuMap[comps[c].name];
+      if (!code) continue;  // sku_master 미매핑 SKU는 건너뜀
+      var units = qty * comps[c].qty;
+      var a = agg[code];
+      if (!a) a = agg[code] = { name: comps[c].name, d7: 0, d14: 0, d30: 0 };
+      if (diff < 7) a.d7 += units;
+      if (diff < 14) a.d14 += units;
+      a.d30 += units;
+    }
+  }
+
+  // 시트 작성
+  var sheet = ss.getSheetByName('출고요약');
+  if (!sheet) {
+    sheet = ss.insertSheet('출고요약');
+  } else {
+    if (sheet.getFilter()) sheet.getFilter().remove();
+    sheet.clear();
+  }
+
+  var stamp = new Date().toLocaleString('ko-KR');
+  var headers = ['product_code', '상품명', 'd7', 'd14', 'd30', '기준일', '갱신시각'];
+  var out = [headers];
+  for (var code2 in agg) {
+    var x = agg[code2];
+    out.push([code2, x.name, x.d7, x.d14, x.d30, anchor, stamp]);
+  }
+
+  sheet.getRange(1, 1, out.length, headers.length).setValues(out);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#1F2937')
+    .setFontColor('#FFFFFF');
+
+  return { rows: out.length - 1, anchorDate: anchor };
 }
 
 // ============================================================
