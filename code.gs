@@ -41,6 +41,8 @@ function doGet(e) {
     // 새 HTML에서만 ?mode=cache를 붙여 요약 캐시를 받습니다.
     if (params.mode === 'cache') {
       data = getDashboardCache();
+    } else if (params.mode === 'outbound') {
+      data = getOutboundSummary();
     } else {
       data = getProcessedData();
     }
@@ -832,6 +834,110 @@ function normalizeDateOnly_(value) {
 function p2_(value) {
   var text = String(value);
   return text.length < 2 ? '0' + text : text;
+}
+
+// ============================================================
+// SKU 출고량 요약 (프로모션 캘린더 재고 경고용)
+// ?mode=outbound — 가공_데이터에서 최근 7/14/30일 출고량을 SKU별로 집계
+// ============================================================
+function getOutboundSummary() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('가공_데이터');
+  var emptyMeta = { source: '가공_데이터', rows: 0, version: 'v3.5' };
+  if (!sheet || sheet.getLastRow() < 2) {
+    return { items: {}, meta: emptyMeta };
+  }
+
+  // 3열 수량, 8열 주문일, 10열 표준품목명
+  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
+
+  // 기준일(anchor) = 데이터 내 최신 주문일 (수기 입력 지연을 흡수)
+  var anchor = '';
+  for (var i = 0; i < data.length; i++) {
+    var d = normalizeDateOnly_(data[i][7]);
+    if (d && d > anchor) anchor = d;
+  }
+  if (!anchor) return { items: {}, meta: emptyMeta };
+  var anchorMs = dateMs_(anchor);
+
+  // 표준품목명별 d7/d14/d30 집계 (최근 30일만)
+  var byStd = {};
+  for (var j = 0; j < data.length; j++) {
+    var std = String(data[j][9] || '').trim();
+    var dateStr = normalizeDateOnly_(data[j][7]);
+    var qty = Number(data[j][2]) || 0;
+    if (!std || !dateStr || qty <= 0) continue;
+
+    var diff = Math.floor((anchorMs - dateMs_(dateStr)) / 86400000);
+    if (diff < 0 || diff >= 30) continue;
+
+    if (!byStd[std]) byStd[std] = { d7: 0, d14: 0, d30: 0 };
+    if (diff < 7) byStd[std].d7 += qty;
+    if (diff < 14) byStd[std].d14 += qty;
+    byStd[std].d30 += qty;
+  }
+
+  // sku_master로 표준품목명 → product_code 결합.
+  // 여러 표준품목명이 같은 product_code면 출고량을 합산한다.
+  var skuMap = loadSkuMaster_(ss);
+  var items = {};
+  for (var stdName in skuMap) {
+    var sku = skuMap[stdName];
+    var agg = byStd[stdName] || { d7: 0, d14: 0, d30: 0 };
+    var it = items[sku.productCode];
+    if (!it) {
+      it = items[sku.productCode] = {
+        productCode: sku.productCode,
+        stdNames: [],
+        d7: 0, d14: 0, d30: 0,
+        leadTime: sku.leadTime,
+        safetyDays: sku.safetyDays
+      };
+    }
+    it.stdNames.push(stdName);
+    it.d7 += agg.d7;
+    it.d14 += agg.d14;
+    it.d30 += agg.d30;
+    it.leadTime = Math.max(it.leadTime, sku.leadTime);
+    it.safetyDays = Math.max(it.safetyDays, sku.safetyDays);
+  }
+
+  return {
+    items: items,
+    meta: {
+      source: '가공_데이터',
+      anchorDate: anchor,
+      windowDays: 30,
+      generatedAt: new Date().toISOString(),
+      version: 'v3.5'
+    }
+  };
+}
+
+// 'YYYY-MM-DD' → UTC 자정 ms (날짜 차이 계산용)
+function dateMs_(ymd) {
+  var p = String(ymd).split('-');
+  return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+
+// sku_master 시트: 표준품목명 | product_code | 리드타임 | 안전일수
+function loadSkuMaster_(ss) {
+  var m = {};
+  var s = ss.getSheetByName('sku_master');
+  if (!s || s.getLastRow() < 2) return m;
+
+  var d = s.getRange(2, 1, s.getLastRow() - 1, 4).getValues();
+  for (var i = 0; i < d.length; i++) {
+    var std = String(d[i][0] || '').trim();
+    var code = String(d[i][1] || '').trim();
+    if (!std || !code) continue;
+    m[std] = {
+      productCode: code,
+      leadTime: Number(d[i][2]) || 0,
+      safetyDays: Number(d[i][3]) || 0
+    };
+  }
+  return m;
 }
 
 // ============================================================
