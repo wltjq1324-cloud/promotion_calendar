@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0014)about:internet -->
+<!-- saved from url=(0093)file:///C:/Users/batt/Documents/Codex/2026-05-21/1-https-wltjq1324-cloud-github-io/index.html -->
 <html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -353,11 +353,11 @@ textarea{min-height:80px;resize:vertical}
   <div class="modal-header">
     <div>
       <h2>재고조회</h2>
-      <div class="inventory-updated" id="inventoryUpdated">최종 갱신: - · 대시보드 최신일: 2026-05-20</div>
+      <div class="inventory-updated" id="inventoryUpdated">오류: Failed to fetch</div>
     </div>
     <div class="inventory-actions">
-      <button class="inventory-view-button active" id="inventoryLotViewButton" type="button">재고조회</button>
-      <button class="inventory-view-button" id="inventorySkuViewButton" type="button">SKU별 재고 현황</button>
+      <button class="inventory-view-button" id="inventoryLotViewButton" type="button">재고조회</button>
+      <button class="inventory-view-button active" id="inventorySkuViewButton" type="button">SKU별 재고 현황</button>
       <button class="inventory-refresh-button" id="refreshInventoryButton" type="button">새로고침</button>
       <button class="close-button" id="closeInventoryButton">×</button>
     </div>
@@ -391,7 +391,7 @@ textarea{min-height:80px;resize:vertical}
     <div class="inventory-kpi"><span>가용 재고</span><strong id="inventoryAvailableStock">0</strong></div>
     <div class="inventory-kpi"><span>부족/품절</span><strong id="inventoryRiskCount">0개</strong></div>
   </div>
-  <div class="inventory-table-wrap" id="inventoryLotView" style="">
+  <div class="inventory-table-wrap" id="inventoryLotView" style="display: none;">
     <table class="inventory-table">
       <thead>
         <tr>
@@ -413,7 +413,7 @@ textarea{min-height:80px;resize:vertical}
     </table>
     <div class="inventory-empty" id="inventoryEmpty" style="">조건에 맞는 재고가 없습니다.</div>
   </div>
-  <div class="inventory-table-wrap sku-status-wrap" id="inventorySkuView" style="display: none;">
+  <div class="inventory-table-wrap sku-status-wrap" id="inventorySkuView" style="display: block;">
     <table class="inventory-table">
       <thead>
         <tr>
@@ -1007,8 +1007,8 @@ function renderSkuInventory(){
 }
 function setInventoryView(view){
   inventoryView=view;
-  document.getElementById('inventoryLotView').style.display=view==='lot'?'':'none';
-  document.getElementById('inventorySkuView').style.display=view==='sku'?'':'none';
+  document.getElementById('inventoryLotView').style.display=view==='lot'?'block':'none';
+  document.getElementById('inventorySkuView').style.display=view==='sku'?'block':'none';
   document.getElementById('inventoryLotViewButton').classList.toggle('active',view==='lot');
   document.getElementById('inventorySkuViewButton').classList.toggle('active',view==='sku');
 }
