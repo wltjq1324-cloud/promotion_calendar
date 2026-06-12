@@ -326,7 +326,7 @@ textarea{min-height:80px;resize:vertical}
       <div class="sku-section full">
         <div class="sku-section-label">
           <span>SKU 구성 / 예상 수량</span>
-          <span class="hint">행 = 출고 단위 · 한 행에 묶음 추가 가능 (행 10개 / 묶음 5개)</span>
+          <span class="hint">행 = 출고 단위 · 한 행에 묶음 추가 가능 (묶음 5개)</span>
         </div>
         <div class="sku-rows" id="skuRows"></div>
         <button class="sku-add-row" id="addSkuRowBtn" type="button">+ 행 추가</button>
@@ -485,7 +485,6 @@ const ROLE_CONFIG = {
 let ROLE = localStorage.getItem('ourboxCalendarRole') || '';
 const USER  = 'MD';
 const COLORS = ['#e53935','#f4511e','#f6bf26','#33b679','#039be5','#3f51b5','#8e24aa'];
-const MAX_ROWS = 10;
 const MAX_BUNDLE = 5;
 
 let state = {
@@ -1524,7 +1523,6 @@ document.getElementById('prevMonth').onclick=()=>{state.visibleDate.setMonth(sta
 document.getElementById('nextMonth').onclick=()=>{state.visibleDate.setMonth(state.visibleDate.getMonth()+1);renderAll()};
 document.getElementById('addSkuRowBtn').onclick=()=>{
   if(!isEditRole()){alert('편집자 권한에서만 행을 추가할 수 있습니다.');return}
-  if(document.querySelectorAll('.sku-row').length>=MAX_ROWS){alert('행은 최대 10개입니다.');return}
   document.getElementById('skuRows').appendChild(makeSkuRow());
   renumberSkuRows();
 };
