@@ -181,6 +181,7 @@ textarea{min-height:80px;resize:vertical}
 .role-external #newPromotionButton{display:none!important}
 .role-internal #submitButton,
 .role-internal #deleteButton,
+.role-internal #duplicateButton,
 .role-internal #addSkuRowBtn,
 .role-internal .sku-add-bundle,
 .role-internal .sku-item-remove,
@@ -189,6 +190,7 @@ textarea{min-height:80px;resize:vertical}
 .role-internal .sku-row-remove{display:none!important}
 .role-external #submitButton,
 .role-external #deleteButton,
+.role-external #duplicateButton,
 .role-external #addSkuRowBtn,
 .role-external .sku-add-bundle,
 .role-external .sku-item-remove,
@@ -339,7 +341,9 @@ textarea{min-height:80px;resize:vertical}
     </div>
     <div class="form-actions">
       <div><button class="ghost-button" id="deleteButton" type="button" style="display:none;color:var(--red);border-color:var(--red)">삭제</button></div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="ghost-button" type="button" id="duplicateButton" style="display:none">프로모션 복제</button>
+        <span aria-hidden="true" style="width:1px;height:24px;background:var(--line);margin:0 6px"></span>
         <button class="ghost-button" type="button" id="cancelButton">취소</button>
         <button class="primary-button" type="submit" id="submitButton">저장</button>
       </div>
@@ -1478,6 +1482,7 @@ function openNewModal(){
   document.getElementById('startDateInput').value=toKey(new Date());
   document.getElementById('endDateInput').value=toKey(new Date());
   document.getElementById('deleteButton').style.display='none';
+  document.getElementById('duplicateButton').style.display='none';
   initSkuRows([]);
   modalEl.classList.add('open');
 }
@@ -1494,8 +1499,24 @@ function openEditModal(p){
   document.getElementById('ownerInput').value=p.owner;
   document.getElementById('memoInput').value=p.memo||'';
   document.getElementById('deleteButton').style.display='';
+  document.getElementById('duplicateButton').style.display=isEditRole()?'':'none';
   initSkuRows(parseSku(p.product_name));
   modalEl.classList.add('open');
+}
+function duplicatePromotion(){
+  if(!isEditRole()){alert('편집자 권한에서만 복제할 수 있습니다.');return}
+  document.getElementById('modalTitle').textContent='프로모션 등록';
+  document.getElementById('editingId').value='';
+  document.getElementById('titleInput').value='';
+  const today=toKey(new Date());
+  document.getElementById('startDateInput').value=today;
+  document.getElementById('endDateInput').value=today;
+  document.getElementById('channelInput').selectedIndex=0;
+  document.getElementById('ownerInput').selectedIndex=0;
+  document.getElementById('memoInput').value='';
+  document.getElementById('deleteButton').style.display='none';
+  document.getElementById('duplicateButton').style.display='none';
+  document.getElementById('titleInput').focus();
 }
 function closeModal(){modalEl.classList.remove('open')}
 
@@ -1503,6 +1524,7 @@ function closeModal(){modalEl.classList.remove('open')}
 document.getElementById('newPromotionButton').onclick=openNewModal;
 document.getElementById('closeModalButton').onclick=closeModal;
 document.getElementById('cancelButton').onclick=closeModal;
+document.getElementById('duplicateButton').onclick=duplicatePromotion;
 document.getElementById('inventoryButton').onclick=openInventoryModal;
 document.getElementById('refreshInventoryButton').onclick=refreshInventory;
 document.getElementById('closeInventoryButton').onclick=closeInventoryModal;
