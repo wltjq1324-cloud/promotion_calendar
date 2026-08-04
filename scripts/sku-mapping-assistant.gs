@@ -58,16 +58,22 @@ var CONFIG = {
   STALE_DAYS: 3
 };
 
-/** 최초 1회: 일일 트리거 + 즉시 실행 */
+/** 최초 1회: 일일 트리거 + 편집 트리거 + 즉시 실행 */
 function setup() {
   removeTriggers_();
   ScriptApp.newTrigger('runMappingAssistant').timeBased().everyDays(1).atHour(9).create();
+  // map_product 에서 표준 품목명을 드롭다운으로 고르는 순간 구성단품/상품군 자동 채움
+  ScriptApp.newTrigger('onMapEdit')
+    .forSpreadsheet(CONFIG.SPREADSHEET_ID)
+    .onEdit()
+    .create();
   runMappingAssistant();
 }
 
 function removeTriggers_() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'runMappingAssistant') ScriptApp.deleteTrigger(t);
+    var fn = t.getHandlerFunction();
+    if (fn === 'runMappingAssistant' || fn === 'onMapEdit') ScriptApp.deleteTrigger(t);
   });
 }
 
@@ -381,6 +387,103 @@ function sendReviewDigest_(review, totalAdded) {
 
   fresh.forEach(function (d) { alerted[normalize_(d.raw)] = new Date().toISOString(); });
   props.setProperty('alertedItems', JSON.stringify(alerted));
+}
+
+/* ===================== onEdit 자동완성 ===================== */
+
+/**
+ * map_product 에서 "표준 품목명" 셀이 편집되는 순간(드롭다운 선택 포함),
+ * 구성단품/상품군을 자동으로 채운다.
+ *  - 구성단품이 이미 입력돼 있으면 절대 덮어쓰지 않음
+ *  - "A + B" / "A * 2" 패턴은 단품 사전으로 분해해 구성단품 기입, 상품군=세트
+ *  - 알려진 단품이면 상품군=단품 (구성단품은 관례대로 비움)
+ *  - 매핑상태가 ⚠️ 였으면 "✅ 수동확정" 으로 갱신 (원가 숫자는 건드리지 않음)
+ */
+function onMapEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    var sheet = e.range.getSheet();
+    if (sheet.getName() !== CONFIG.MAP_SHEET) return;
+
+    var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var col = {
+      std: header.indexOf(CONFIG.H_STD),
+      type: header.indexOf(CONFIG.H_TYPE),
+      comp: header.indexOf(CONFIG.H_COMP),
+      status: header.indexOf(CONFIG.H_STATUS)
+    };
+    if (col.std < 0) return;
+    if (e.range.getColumn() !== col.std + 1 || e.range.getNumColumns() !== 1) return;
+
+    var dict = buildDictionaries_(sheet);
+
+    var startRow = e.range.getRow();
+    for (var i = 0; i < e.range.getNumRows(); i++) {
+      var row = startRow + i;
+      if (row === 1) continue;
+      autofillRow_(sheet, dict, col, row);
+    }
+  } catch (err) {
+    Logger.log('onMapEdit 오류: ' + err.message);
+  }
+}
+
+function autofillRow_(sheet, dict, col, row) {
+  var std = String(sheet.getRange(row, col.std + 1).getValue()).trim();
+  if (!std) return;
+
+  // 구성단품이 이미 있으면 건드리지 않음
+  if (col.comp >= 0 && String(sheet.getRange(row, col.comp + 1).getValue()).trim()) return;
+
+  var comps = decomposeStandard_(std, dict);
+  if (comps === null) return; // 해석 불가 — 사람이 마저 입력
+
+  var isSet = comps.length > 1;
+  if (col.comp >= 0 && isSet) sheet.getRange(row, col.comp + 1).setValue(comps.join(','));
+  if (col.type >= 0 && !String(sheet.getRange(row, col.type + 1).getValue()).trim()) {
+    sheet.getRange(row, col.type + 1).setValue(isSet ? '세트' : '단품');
+  }
+  if (col.status >= 0) {
+    var status = String(sheet.getRange(row, col.status + 1).getValue()).trim();
+    if (status.indexOf('⚠️') >= 0) sheet.getRange(row, col.status + 1).setValue('✅ 수동확정');
+  }
+}
+
+/**
+ * 표준 품목명을 단품 구성으로 분해.
+ *  - "A + B"      → [A표준, B표준]
+ *  - "A * 3"      → [A표준, A표준, A표준]
+ *  - 알려진 단품   → [자기 자신]
+ *  - 해석 불가     → null
+ */
+function decomposeStandard_(std, dict) {
+  // "X * N" 반복 패턴
+  var mult = std.match(/^(.*?)\s*[\*xX×]\s*(\d+)\s*$/);
+  if (mult) {
+    var base = lookupPiece_(mult[1], dict);
+    if (!base) return null;
+    var n = Math.max(1, Number(mult[2]) || 1);
+    var reps = [];
+    for (var i = 0; i < n; i++) reps.push(base);
+    return reps;
+  }
+
+  // "A + B" 번들 패턴
+  var pieces = std.split(/\s*\+\s*/);
+  if (pieces.length > 1) {
+    var comps = [];
+    for (var p = 0; p < pieces.length; p++) {
+      var parsed = parsePiece_(pieces[p]);
+      var unit = lookupPiece_(parsed.name, dict);
+      if (!unit) return null;
+      for (var q = 0; q < parsed.ea; q++) comps.push(unit);
+    }
+    return comps;
+  }
+
+  // 단일 품목
+  var single = lookupPiece_(std, dict);
+  return single ? [single] : null;
 }
 
 /* ===================== 주문 유입 정체 감시 ===================== */
