@@ -51,7 +51,11 @@ var CONFIG = {
   SINCE_DATE: '2026-05-20',
 
   RECIPIENT: 'wltjq1324@gmail.com',
-  EXAMPLES_PER_ITEM: 3
+  EXAMPLES_PER_ITEM: 3,
+
+  // 주문 유입 정체 감시: raw_orders 최신 주문일시가 오늘로부터 N일 이상
+  // 오래됐으면 경고 메일 (0 이면 감시 끔)
+  STALE_DAYS: 3
 };
 
 /** 최초 1회: 일일 트리거 + 즉시 실행 */
@@ -78,6 +82,8 @@ function runMappingAssistant() {
   var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var mapSheet = ss.getSheetByName(CONFIG.MAP_SHEET);
   if (!mapSheet) throw new Error('탭 "' + CONFIG.MAP_SHEET + '" 을 찾지 못했습니다.');
+
+  checkStaleness_(ss);
 
   var dict = buildDictionaries_(mapSheet);
   var newItems = findNewItems_(ss, dict);
@@ -375,6 +381,55 @@ function sendReviewDigest_(review, totalAdded) {
 
   fresh.forEach(function (d) { alerted[normalize_(d.raw)] = new Date().toISOString(); });
   props.setProperty('alertedItems', JSON.stringify(alerted));
+}
+
+/* ===================== 주문 유입 정체 감시 ===================== */
+
+/**
+ * raw_orders 의 최신 주문일시가 STALE_DAYS 이상 오래됐으면 경고 메일.
+ * (매핑이 아니라 "주문 데이터 유입"이 멈춘 것을 조기에 알리는 watchdog.
+ *  같은 날 중복 발송하지 않음.)
+ */
+function checkStaleness_(ss) {
+  if (!CONFIG.STALE_DAYS) return;
+  var sheet = ss.getSheetByName(CONFIG.ORDERS_SHEET);
+  if (!sheet) return;
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) return;
+
+  var iDate = values[0].indexOf(CONFIG.ORDERS_DATE_HEADER);
+  if (iDate < 0) return;
+
+  var latest = null;
+  for (var r = 1; r < values.length; r++) {
+    var d = parseDate_(values[r][iDate]);
+    if (d && (!latest || d > latest)) latest = d;
+  }
+  if (!latest) return;
+
+  var days = Math.floor((new Date() - latest) / 86400000);
+  if (days < CONFIG.STALE_DAYS) return;
+
+  var props = PropertiesService.getScriptProperties();
+  var todayKey = formatDate_(new Date());
+  if (props.getProperty('staleAlertDate') === todayKey) return; // 오늘 이미 발송
+
+  var to = CONFIG.RECIPIENT || Session.getEffectiveUser().getEmail();
+  var subject = '[OURBOX] ⚠️ 주문 데이터가 ' + days + '일째 멈춰 있습니다';
+  var body = [
+    'raw_orders 의 최신 주문일시가 ' + formatDate_(latest) + ' 입니다. (' + days + '일 경과)',
+    '',
+    '주문 수집(엑셀 붙여넣기 또는 자동 유입)이 중단된 것으로 보입니다.',
+    '주문이 들어오지 않으면 SKU 매핑/재고 차감 계산도 모두 멈춥니다.',
+    '',
+    '시트 바로가기:',
+    'https://docs.google.com/spreadsheets/d/' + CONFIG.SPREADSHEET_ID + '/edit',
+    '',
+    '— 자동 알림 (sku-mapping-assistant / 정체 감시)'
+  ].join('\n');
+  MailApp.sendEmail(to, subject, body);
+  props.setProperty('staleAlertDate', todayKey);
+  Logger.log('정체 경고 발송: 최신 주문 ' + formatDate_(latest) + ' (' + days + '일 경과)');
 }
 
 /* ===================== 유틸 ===================== */
