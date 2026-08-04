@@ -58,28 +58,273 @@ var CONFIG = {
   STALE_DAYS: 3
 };
 
+/* -------------------------------------------------------------------
+ * [사이트 연동] 캘린더 /inven 페이지가 직접 읽는 운영_DB 의 sku_mapping 탭.
+ * 여기가 갱신돼야 사이트의 미매핑 경고가 사라지고 소진예상일 계산이 살아난다.
+ * ------------------------------------------------------------------- */
+var SITE = {
+  MAPPING_SS_ID: '1FGxRu59DL7SMB4siYE_IZiTU5rNrHWefIeI9e_Hqazs', // OURBOX_프로모션_운영_DB
+  MAPPING_SHEET: 'sku_mapping',
+  // /inven 페이지와 동일한 데이터 소스
+  DASHBOARD_CACHE_URL: 'https://script.google.com/macros/s/AKfycbwi5lQEGI8caIRxVmJWKPaad0G07cAKWkXF52YYzpKJhJ2dV21QggZ1jdx3nxHP-eCpNQ/exec?mode=cache',
+  INVENTORY_JSON_URL: 'https://wltjq1324-cloud.github.io/promotion_calendar/inventory-latest.json',
+  RECENT_DAYS: 60, // 최근 N일 내 출고된 상품만 동기화 대상
+  MAX_NAME_SLOTS: 6 // inventory_product_name_1~6
+};
+
 /** 최초 1회: 일일 트리거 + 편집 트리거 + 즉시 실행 */
 function setup() {
   removeTriggers_();
-  ScriptApp.newTrigger('runMappingAssistant').timeBased().everyDays(1).atHour(9).create();
+  ScriptApp.newTrigger('runDailyPipeline').timeBased().everyDays(1).atHour(9).create();
   // map_product 에서 표준 품목명을 드롭다운으로 고르는 순간 구성단품/상품군 자동 채움
   ScriptApp.newTrigger('onMapEdit')
     .forSpreadsheet(CONFIG.SPREADSHEET_ID)
     .onEdit()
     .create();
-  runMappingAssistant();
+  runDailyPipeline();
+}
+
+/** 매일 실행: 사이트용 sku_mapping 동기화 → 내부 map_product 어시스턴트 */
+function runDailyPipeline() {
+  var errors = [];
+  try { runSkuMappingSync(); } catch (e) { errors.push('sku_mapping 동기화: ' + e.message); }
+  try { runMappingAssistant(); } catch (e) { errors.push('map_product 어시스턴트: ' + e.message); }
+  if (errors.length) throw new Error(errors.join(' / '));
 }
 
 function removeTriggers_() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     var fn = t.getHandlerFunction();
-    if (fn === 'runMappingAssistant' || fn === 'onMapEdit') ScriptApp.deleteTrigger(t);
+    if (fn === 'runMappingAssistant' || fn === 'runDailyPipeline' || fn === 'onMapEdit') ScriptApp.deleteTrigger(t);
   });
 }
 
 /** 알림 기록 초기화 (검토 메일을 처음부터 다시 받고 싶을 때) */
 function resetAlertMemory() {
   PropertiesService.getScriptProperties().deleteProperty('alertedItems');
+  PropertiesService.getScriptProperties().deleteProperty('siteAlertedItems');
+}
+
+/* ===================== [사이트] sku_mapping 자동 동기화 ===================== */
+
+/**
+ * /inven 페이지가 읽는 운영_DB sku_mapping 탭을 자동 갱신한다.
+ *  1) 대시보드 출고 캐시에서 최근 RECENT_DAYS일 상품 목록 수집
+ *  2) sku_mapping 에 이미 있는 상품은 건너뜀 (append-only)
+ *  3) 기존 매핑 행 + 실시간 재고 상품명으로 자동 매칭:
+ *     - 단품 완전일치            → 자동 (needs_review FALSE)
+ *     - 번들 분해 (A + B / A*N)  → 자동 (needs_review TRUE, 사이트 관례 유지)
+ *     - 실패                     → unmapped (재고상품명 비움, 드롭다운으로 선택)
+ *  4) 신규 행의 inventory_product_name_1~6 셀에 재고 상품명 드롭다운 적용
+ *  5) 미매핑 건만 요약 메일
+ */
+function runSkuMappingSync() {
+  var ss = SpreadsheetApp.openById(SITE.MAPPING_SS_ID);
+  var sheet = ss.getSheetByName(SITE.MAPPING_SHEET);
+  if (!sheet) throw new Error('탭 "' + SITE.MAPPING_SHEET + '" 을 찾지 못했습니다.');
+
+  var values = sheet.getDataRange().getValues();
+  if (!values.length) throw new Error('sku_mapping 이 비어 있습니다.');
+  var header = values[0];
+  var col = {
+    gen: header.indexOf('generated_at'),
+    latest: header.indexOf('dashboard_latest_date'),
+    dash: header.indexOf('dashboard_product'),
+    std: header.indexOf('standard_product_name'),
+    type: header.indexOf('product_type'),
+    inv1: header.indexOf('inventory_product_name_1'),
+    match: header.indexOf('match_type'),
+    conf: header.indexOf('confidence'),
+    review: header.indexOf('needs_review')
+  };
+  if (col.dash < 0 || col.inv1 < 0) throw new Error('sku_mapping 헤더(dashboard_product / inventory_product_name_1)를 찾지 못했습니다.');
+
+  // 기존 매핑: 존재 집합 + 단품 사전 (dashboard/standard → 재고상품명)
+  var existing = {}, unitDict = {};
+  for (var r = 1; r < values.length; r++) {
+    var dash = String(values[r][col.dash] || '').trim();
+    if (!dash || dash === '대시보드 상품명(원문)') continue;
+    existing[normalize_(dash)] = true;
+    var inv1 = String(values[r][col.inv1] || '').trim();
+    var type = col.type >= 0 ? String(values[r][col.type] || '').trim() : '';
+    var inv2 = col.inv1 + 1 < header.length ? String(values[r][col.inv1 + 1] || '').trim() : '';
+    if (inv1 && !inv2 && type !== '세트') { // 단품 매핑만 사전에 등록
+      unitDict[normalize_(dash)] = inv1;
+      var std = col.std >= 0 ? String(values[r][col.std] || '').trim() : '';
+      if (std) unitDict[normalize_(std)] = inv1;
+    }
+  }
+
+  // 실시간 재고 상품명 (정확 일치 매칭 + 드롭다운 후보)
+  var invNames = fetchInventoryNames_();
+  var invByNorm = {};
+  invNames.forEach(function (n) { if (!invByNorm[normalize_(n)]) invByNorm[normalize_(n)] = n; });
+
+  // 대시보드 최근 상품
+  var dash = fetchDashboardProducts_();
+  if (!dash.products.length) { Logger.log('대시보드 캐시에 상품 없음.'); return; }
+
+  var newOnes = dash.products.filter(function (p) { return !existing[normalize_(p.name)]; });
+  if (!newOnes.length) { Logger.log('sku_mapping: 신규 상품 없음.'); return; }
+
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  var width = sheet.getLastColumn();
+  var rows = [];
+  var unmappedForMail = [];
+
+  newOnes.forEach(function (p) {
+    var m = matchSiteProduct_(p.name, unitDict, invByNorm);
+    var row = new Array(width).fill('');
+    if (col.gen >= 0) row[col.gen] = now;
+    if (col.latest >= 0) row[col.latest] = dash.latestDate;
+    row[col.dash] = p.name;
+    if (col.std >= 0) row[col.std] = m.standard;
+    if (col.type >= 0) row[col.type] = m.type;
+    for (var i = 0; i < Math.min(m.invNames.length, SITE.MAX_NAME_SLOTS); i++) {
+      row[col.inv1 + i] = m.invNames[i];
+    }
+    if (col.match >= 0) row[col.match] = m.matchType;
+    if (col.conf >= 0) row[col.conf] = m.confidence;
+    if (col.review >= 0) row[col.review] = m.needsReview ? 'TRUE' : 'FALSE';
+    rows.push(row);
+    if (m.matchType === 'unmapped') unmappedForMail.push({ name: p.name, qty: p.qty });
+  });
+
+  var startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, rows.length, width).setValues(rows);
+
+  // 재고상품명 슬롯에 드롭다운 (실시간 재고 상품명 목록)
+  if (invNames.length) {
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(invNames.slice().sort(), true)
+      .setAllowInvalid(true)
+      .setHelpText('재고 상품명에서 선택하세요.')
+      .build();
+    sheet.getRange(startRow, col.inv1 + 1, rows.length, SITE.MAX_NAME_SLOTS).setDataValidation(rule);
+  }
+
+  if (unmappedForMail.length) sendSiteDigest_(unmappedForMail, rows.length);
+  Logger.log('sku_mapping: ' + rows.length + '행 추가 (미매핑 ' + unmappedForMail.length + ')');
+}
+
+/** 대시보드 출고 캐시에서 최근 상품 목록 */
+function fetchDashboardProducts_() {
+  var res = UrlFetchApp.fetch(SITE.DASHBOARD_CACHE_URL + '&t=' + new Date().getTime(), { muteHttpExceptions: true, followRedirects: true });
+  if (res.getResponseCode() !== 200) throw new Error('대시보드 캐시 HTTP ' + res.getResponseCode());
+  var data = JSON.parse(res.getContentText());
+  var rows = (data.dashboardCache && data.dashboardCache.productRows) || [];
+  var latest = '';
+  rows.forEach(function (r) { if (r.date && r.date > latest) latest = r.date; });
+  var cutoff = latest ? shiftDateKey_(latest, -SITE.RECENT_DAYS) : '';
+  var agg = {};
+  rows.forEach(function (r) {
+    if (!r.product || !r.date || (cutoff && r.date < cutoff)) return;
+    var key = normalize_(r.product);
+    if (!agg[key]) agg[key] = { name: String(r.product).trim(), qty: 0 };
+    agg[key].qty += Number(r.qty) || 0;
+  });
+  return { latestDate: latest, products: Object.keys(agg).map(function (k) { return agg[k]; }) };
+}
+
+/** GitHub Pages 재고 JSON 에서 상품명 유니크 목록 */
+function fetchInventoryNames_() {
+  var res = UrlFetchApp.fetch(SITE.INVENTORY_JSON_URL + '?t=' + new Date().getTime(), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('재고 JSON HTTP ' + res.getResponseCode());
+  var data = JSON.parse(res.getContentText());
+  var seen = {}, out = [];
+  (data.items || []).forEach(function (it) {
+    var n = String(it.product_name || '').trim();
+    if (n && !seen[n]) { seen[n] = true; out.push(n); }
+  });
+  return out;
+}
+
+/** 대시보드 상품명 → 재고상품명 슬롯 매칭 */
+function matchSiteProduct_(name, unitDict, invByNorm) {
+  function unit(piece) {
+    var k = normalize_(piece);
+    if (unitDict[k]) return unitDict[k];
+    if (invByNorm[k]) return invByNorm[k];
+    var s = normalize_(stripTags_(piece));
+    if (unitDict[s]) return unitDict[s];
+    if (invByNorm[s]) return invByNorm[s];
+    return null;
+  }
+
+  // "X * N" 반복
+  var mult = name.match(/^(.*?)\s*[\*xX×]\s*(\d+)\s*$/);
+  if (mult) {
+    var base = unit(mult[1]);
+    if (base) {
+      var n = Math.max(1, Number(mult[2]) || 1);
+      var reps = [];
+      for (var i = 0; i < n; i++) reps.push(base);
+      return { standard: name, type: '세트', invNames: reps, matchType: 'auto_multiple', confidence: 'high', needsReview: true };
+    }
+  }
+
+  // "A + B" 번들
+  var pieces = name.split(/\s*\+\s*/);
+  if (pieces.length > 1) {
+    var comps = [];
+    for (var p = 0; p < pieces.length; p++) {
+      var parsed = parsePiece_(pieces[p]);
+      var u = unit(parsed.name);
+      if (!u) { comps = null; break; }
+      for (var q = 0; q < parsed.ea; q++) comps.push(u);
+    }
+    if (comps) return { standard: name, type: '세트', invNames: comps, matchType: 'auto_bundle', confidence: 'high', needsReview: true };
+  } else {
+    // 단일 + (NEA)
+    var single = parsePiece_(name);
+    var u1 = unit(single.name);
+    if (u1) {
+      if (single.ea > 1) {
+        var rep = [];
+        for (var m = 0; m < single.ea; m++) rep.push(u1);
+        return { standard: single.name + ' * ' + single.ea, type: '세트', invNames: rep, matchType: 'auto_multiple', confidence: 'high', needsReview: true };
+      }
+      return { standard: name, type: '단품', invNames: [u1], matchType: 'auto_alias', confidence: 'high', needsReview: false };
+    }
+  }
+
+  return { standard: name, type: '', invNames: [], matchType: 'unmapped', confidence: 'low', needsReview: true };
+}
+
+/** 미매핑 요약 메일 (중복 발송 방지) */
+function sendSiteDigest_(unmapped, totalAdded) {
+  var props = PropertiesService.getScriptProperties();
+  var alerted = {};
+  try { alerted = JSON.parse(props.getProperty('siteAlertedItems') || '{}'); } catch (e) { alerted = {}; }
+  var fresh = unmapped.filter(function (u) { return !alerted[normalize_(u.name)]; });
+  if (!fresh.length) return;
+
+  fresh.sort(function (a, b) { return b.qty - a.qty; });
+  var to = CONFIG.RECIPIENT || Session.getEffectiveUser().getEmail();
+  var lines = [];
+  lines.push('/inven 페이지용 sku_mapping 에 신규 상품 ' + totalAdded + '행이 자동 추가되었습니다.');
+  lines.push('아래 ' + fresh.length + '건은 자동 매칭에 실패했습니다. 시트에서 재고상품명을 드롭다운으로 선택해 주세요.');
+  lines.push('');
+  fresh.forEach(function (u, i) {
+    lines.push((i + 1) + '. ' + u.name + ' (최근 출고 ' + u.qty + '개)');
+  });
+  lines.push('');
+  lines.push('sku_mapping 바로가기:');
+  lines.push('https://docs.google.com/spreadsheets/d/' + SITE.MAPPING_SS_ID + '/edit');
+  lines.push('');
+  lines.push('— 자동 알림 (sku-mapping-sync)');
+  MailApp.sendEmail(to, '[OURBOX] 재고 페이지 미매핑 상품 ' + fresh.length + '건', lines.join('\n'));
+
+  fresh.forEach(function (u) { alerted[normalize_(u.name)] = new Date().toISOString(); });
+  props.setProperty('siteAlertedItems', JSON.stringify(alerted));
+}
+
+/** 날짜키 이동: '2026-08-03' + (-60) → '2026-06-04' */
+function shiftDateKey_(key, days) {
+  var d = parseDate_(key);
+  if (!d) return '';
+  d.setDate(d.getDate() + days);
+  return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd');
 }
 
 /* ===================== 메인 ===================== */
