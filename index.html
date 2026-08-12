@@ -244,7 +244,7 @@ textarea{min-height:80px;resize:vertical}
 </style>
 </head>
 <body class="role-edit">
-<div class="loading" id="loading" style="display: none;">데이터 불러오는 중...</div>
+<div class="loading" id="loading">데이터 불러오는 중...</div>
 <div class="saving-overlay" id="savingOverlay"><div class="saving-box">⏳ 저장 중입니다...</div></div>
 
 <div class="access-gate" id="accessGate" style="display: none;">
@@ -261,7 +261,7 @@ textarea{min-height:80px;resize:vertical}
 </div>
 
 
-<main class="app" style="" id="mainApp">
+<main class="app" style="display:none" id="mainApp">
 <section class="topbar">
   <div>
     <p class="eyebrow">OURBOX PROMOTION OPS</p>
@@ -270,7 +270,7 @@ textarea{min-height:80px;resize:vertical}
   </div>
   <div class="controls">
     <button class="month-control" id="prevMonth">‹</button>
-    <strong class="role-pill" id="currentMonthLabel">2026년 5월</strong>
+    <strong class="role-pill" id="currentMonthLabel">·</strong>
     <button class="month-control" id="nextMonth">›</button>
     <button class="ghost-button" id="inventoryButton" type="button">재고조회</button>
     <span class="role-pill" id="roleLabel">편집 권한: MD/마케팅</span>
@@ -279,34 +279,34 @@ textarea{min-height:80px;resize:vertical}
   </div>
 </section>
 
-<section class="action-strip" id="actionStrip" style="">
+<section class="action-strip" id="actionStrip" style="display:none">
   <strong>오늘의 액션 &nbsp;</strong><span id="actionContent">오늘 시작 <em>쿠팡,컬리,B마트</em> &nbsp;|&nbsp; 오늘 마감 <em>쿠팡,컬리,B마트</em> &nbsp;|&nbsp; D-3 이내: <em>B마트</em></span>
 </section>
 
 <section class="dashboard-strip">
   <div class="metric">
     <div class="metric-label"><span>이번 달 프로모션</span><span>건수</span></div>
-    <div class="metric-value" id="metricCount">5건</div>
+    <div class="metric-value" id="metricCount">-</div>
     <div class="metric-note">등록된 이벤트 기준</div>
   </div>
   <div class="metric">
     <div class="metric-label"><span>예상 추가 출고</span><span>수량</span></div>
-    <div class="metric-value" id="metricQty">10,832개</div>
+    <div class="metric-value" id="metricQty">-</div>
     <div class="metric-note">행 수량 합산</div>
   </div>
   <div class="metric">
     <div class="metric-label"><span>가장 바쁜 주차</span><span>피크</span></div>
-    <div class="metric-value" id="metricPeak">7,703개</div>
-    <div class="metric-note" id="metricPeakNote">4주차 예상 출고</div>
+    <div class="metric-value" id="metricPeak">-</div>
+    <div class="metric-note" id="metricPeakNote">주차 합계 기준</div>
   </div>
   <div class="metric" style="overflow:hidden">
     <div class="metric-label"><span>최근 추가된 프로모션</span><span>최신 5건</span></div>
-    <div id="recentList" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--ink)"><div class="recent-item" title="GS리테일 권장취합"><span class="recent-date">06-02~06-02</span><span class="recent-title">[GS리테일 권장취합]</span></div><div class="recent-item" title="B마트"><span class="recent-date">05-22~05-22</span><span class="recent-title">[B마트]</span></div><div class="recent-item" title="GS리테일"><span class="recent-date">05-28~05-28</span><span class="recent-title">[GS리테일]</span></div><div class="recent-item" title="쿠팡,컬리,B마트"><span class="recent-date">05-21~05-21</span><span class="recent-title">[쿠팡,컬리,B마트]</span></div><div class="recent-item" title="네이버 프로모션 - 한입발견회"><span class="recent-date">05-18~05-24</span><span class="recent-title">[네이버 프로모션 - 한입발견회]</span></div></div>
+    <div id="recentList" style="margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--ink)"></div>
   </div>
 </section>
 
 <section class="calendar-shell">
-  <div class="calendar-grid" id="calendarGrid"><div class="day-header">일</div><div class="day-header">월</div><div class="day-header">화</div><div class="day-header">수</div><div class="day-header">목</div><div class="day-header">금</div><div class="day-header">토</div><div class="week-header">주차 합계</div><div class="day-cell outside"><div class="date-row"><span class="date-number">26</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">27</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">28</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">30</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">1</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">2</span></div></div><div class="week-total"><div class="week-total-head"><span>1주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">3</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">6</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">7</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">8</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">9</span></div></div><div class="week-total"><div class="week-total-head"><span>2주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">10</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">11</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">12</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">13</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">14</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">15</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">16</span></div></div><div class="week-total"><div class="week-total-head"><span>3주차 예상 출고</span><span class="week-total-sum">0개</span></div><div class="week-total-empty">등록된 프로모션 없음</div></div><div class="day-cell"><div class="date-row"><span class="date-number">17</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">18</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"><span class="bar-title">네이버 프로모션 - 한입발견회</span><span class="bar-qty">900개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">19</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">20</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell today"><div class="date-row"><span class="date-number">21</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"></div></div><div class="promo-slot"><div class="promo-bar single" data-promo-id="p1779319840991" style="background: rgb(244, 81, 30);"><span class="bar-title">쿠팡,컬리,B마트</span><span class="bar-qty">6,236개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">22</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"></div></div><div class="promo-slot"><div class="promo-bar single" data-promo-id="p1779320963735" style="background: rgb(244, 81, 30);"><span class="bar-title">B마트</span><span class="bar-qty">696개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">23</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"></div></div></div><div class="week-total"><div class="week-total-head"><span>4주차 예상 출고</span><span class="week-total-sum">7,703개</span></div><div class="week-promo"><div class="week-promo-name">[네이버 프로모션 - 한입발견회]</div><div class="week-promo-sku">· [단품] 선물세트 100g 군고구마빵(3개입) (171개)</div><div class="week-promo-sku">· [단품] 선물세트 100g 초당옥수수빵(3개입) (171개)</div><div class="week-promo-sku">· [단품] 토마토바질 감자빵 80g 6개입 (86개)</div><div class="week-promo-sku">· [단품] 두바이쫀득 감자빵 50g 5개입 (86개)</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) (257개)</div></div><div class="week-promo"><div class="week-promo-name">[쿠팡,컬리,B마트]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) (1,380개)</div><div class="week-promo-sku">· [단품] 고구마빵(4개입) (48개)</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(5개입) (1,800개)</div><div class="week-promo-sku">· [단품] 고구마빵(4개입) (456개)</div><div class="week-promo-sku">· [단품] 치즈감자빵(5개입) (552개)</div><div class="week-promo-sku">· [단품] 두바이쫀득 감자빵 50g 5개입 (2,000개)</div></div><div class="week-promo"><div class="week-promo-name">[B마트]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(5개입) (456개)</div><div class="week-promo-sku">· [단품] 토마토바질 감자빵 80g 6개입 (240개)</div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">24</span></div><div class="promo-slot"><div class="promo-bar start end" data-promo-id="p1779234282566" style="background: rgb(229, 57, 53);"><span class="bar-title">네이버 프로모션 - 한입발견회</span><span class="bar-qty">900개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">25</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">26</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">27</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">28</span></div><div class="promo-slot"><div class="promo-bar single" data-promo-id="p1779320822209" style="background: rgb(229, 57, 53);"><span class="bar-title">GS리테일</span><span class="bar-qty">1,100개</span></div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">29</span></div></div><div class="day-cell"><div class="date-row"><span class="date-number">30</span></div></div><div class="week-total"><div class="week-total-head"><span>5주차 예상 출고</span><span class="week-total-sum">1,229개</span></div><div class="week-promo"><div class="week-promo-name">[네이버 프로모션 - 한입발견회]</div><div class="week-promo-sku">· [단품] 선물세트 100g 군고구마빵(3개입) (29개)</div><div class="week-promo-sku">· [단품] 선물세트 100g 초당옥수수빵(3개입) (29개)</div><div class="week-promo-sku">· [단품] 토마토바질 감자빵 80g 6개입 (14개)</div><div class="week-promo-sku">· [단품] 두바이쫀득 감자빵 50g 5개입 (14개)</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) (43개)</div></div><div class="week-promo"><div class="week-promo-name">[GS리테일]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(5개입) (500개)</div><div class="week-promo-sku">· [단품] 치즈감자빵(5개입) (150개)</div><div class="week-promo-sku">· [단품] 치즈감자빵(5개입) (150개)</div><div class="week-promo-sku">· [단품] 두바이쫀득 감자빵 50g 5개입 (300개)</div></div></div><div class="day-cell"><div class="date-row"><span class="date-number">31</span></div><div class="promo-slot"><div class="promo-bar start" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"><span class="bar-title">[카카오] 톡딜</span><span class="bar-qty">1,900개</span></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">1</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">2</span></div><div class="promo-slot"><div class="promo-bar middle" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">3</span></div><div class="promo-slot"><div class="promo-bar end" data-promo-id="p1778822436405" style="background: rgb(229, 57, 53);"></div></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">4</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">5</span></div></div><div class="day-cell outside"><div class="date-row"><span class="date-number">6</span></div></div><div class="week-total"><div class="week-total-head"><span>6주차 예상 출고</span><span class="week-total-sum">4,700개</span></div><div class="week-promo"><div class="week-promo-name">[[카카오] 톡딜]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(10개입) + [증정] 치즈 감자빵 1개입 (1,000개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) (500개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 토마토바질 감자빵 80g 6개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 두바이쫀득 감자빵 50g 5개입 (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 고구마빵(4개입) (100개)</div><div class="week-promo-sku">· [단품] 고르곤졸라 감자빵 80g 6개입 + [단품] 오리지널 감자빵(5개입) + [단품] 고구마빵(4개입) (100개)</div></div><div class="week-promo"><div class="week-promo-name">[GS리테일 권장취합]</div><div class="week-promo-sku">· [단품] 오리지널 감자빵(5개입) (1,000개)</div><div class="week-promo-sku">· [단품] 치즈감자빵(5개입) (800개)</div><div class="week-promo-sku">· [단품] 고구마빵(4개입) (500개)</div><div class="week-promo-sku">· [단품] 두바이쫀득 감자빵 50g 5개입 (500개)</div></div></div></div>
+  <div class="calendar-grid" id="calendarGrid"></div>
 </section>
 </main>
 
@@ -357,7 +357,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="modal-header">
     <div>
       <h2>재고조회</h2>
-      <div class="inventory-updated" id="inventoryUpdated">최종 갱신: - · 대시보드 최신일: 2026-05-20</div>
+      <div class="inventory-updated" id="inventoryUpdated">-</div>
     </div>
     <div class="inventory-actions">
       <button class="inventory-view-button active" id="inventoryLotViewButton" type="button">재고조회</button>
@@ -613,9 +613,26 @@ function assignColors(){
 }
 function getColor(id){return COLORS[state.colorMap[id]??0]}
 
+// Apps Script는 간헐적으로 JSON 대신 HTML 오류 페이지를 반환한다. 재시도 후 실패하면 사람이 읽을 수 있는 메시지로 바꾼다.
+async function fetchJson(url,options,tries=3){
+  let lastErr;
+  for(let i=0;i<tries;i++){
+    try{
+      const res=await fetch(url,options);
+      const text=await res.text();
+      if(!res.ok)throw new Error(`서버 응답 오류 (HTTP ${res.status})`);
+      try{return JSON.parse(text)}
+      catch(e){throw new Error('서버가 데이터 대신 오류 페이지를 반환했습니다.')}
+    }catch(err){
+      lastErr=err;
+      if(i<tries-1)await new Promise(r=>setTimeout(r,700*Math.pow(2,i)));
+    }
+  }
+  throw lastErr;
+}
+
 async function loadData(){
-  const res=await fetch(`${API}?action=load&role=${apiRole()}`);
-  const data=await res.json();
+  const data=await fetchJson(`${API}?action=load&role=${apiRole()}&t=${Date.now()}`);
   if(data.error)throw new Error(data.error);
   state.promotions=data.promotions||[];
   if(ROLE==='external'){
@@ -637,8 +654,8 @@ async function loadData(){
   assignColors();
 }
 async function apiPost(body){
-  const res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
-  const r=await res.json();if(r.error)throw new Error(r.error);return r;
+  const r=await fetchJson(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  if(r.error)throw new Error(r.error);return r;
 }
 
 function normInventoryText(v){
@@ -1555,7 +1572,7 @@ document.getElementById('deleteButton').onclick=async()=>{
   isSaving=true;
   const id=document.getElementById('editingId').value;
   closeModal();showSaving();
-  try{await apiPost({action:'delete',role:apiRole(),id});await loadData();renderAll()}
+  try{await apiPost({action:'delete',role:apiRole(),id});await loadData();renderAll();saveCache()}
   catch(err){alert('삭제 실패: '+err.message)}
   finally{isSaving=false;hideSaving()}
 };
@@ -1580,26 +1597,72 @@ document.getElementById('promotionForm').onsubmit=async(e)=>{
   };
   if(data.start_date>data.end_date){alert('종료일은 시작일 이후여야 합니다.');return}
   isSaving=true;closeModal();showSaving();
-  try{await apiPost({action:'upsert',role:apiRole(),data});await loadData();renderAll()}
+  try{await apiPost({action:'upsert',role:apiRole(),data});await loadData();renderAll();saveCache()}
   catch(err){alert('저장 실패: '+err.message)}
   finally{isSaving=false;hideSaving()}
 };
 
 // ===== 초기화 =====
-async function init(){
+const CACHE_KEY='ourboxCalendarCache';
+
+function fillSelects(){
+  [['channelInput',state.channels],['ownerInput',state.owners]].forEach(([id,list])=>{
+    if(!list||!list.length)return;
+    const sel=document.getElementById(id);
+    sel.innerHTML='';
+    list.forEach(v=>{const opt=document.createElement('option');opt.value=opt.textContent=v;sel.appendChild(opt)});
+  });
+}
+function showApp(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('mainApp').style.display='';
+}
+function saveCache(){
   try{
-    applyRoleUI();
+    localStorage.setItem(CACHE_KEY,JSON.stringify({
+      at:Date.now(),role:ROLE,
+      promotions:state.promotions,products:state.products,priceMap:state.priceMap,
+      channels:state.channels,owners:state.owners
+    }));
+  }catch(e){}
+}
+// 직전 데이터를 먼저 그려 첫 화면을 즉시 띄우고, 최신 데이터는 뒤이어 교체한다.
+function paintFromCache(){
+  try{
+    const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    if(!c||c.role!==ROLE||!Array.isArray(c.promotions)||!c.promotions.length)return false;
+    state.promotions=c.promotions;state.products=c.products||[];state.priceMap=c.priceMap||{};
+    state.channels=c.channels||[];state.owners=c.owners||[];
+    assignColors();fillSelects();renderAll();showApp();
+    return true;
+  }catch(e){return false}
+}
+function showLoadError(msg){
+  const el=document.getElementById('loading');
+  el.style.display='';
+  el.innerHTML='';
+  el.appendChild(el.ownerDocument.createTextNode('데이터를 불러오지 못했습니다: '+msg));
+  const btn=document.createElement('button');
+  btn.className='primary-button';
+  btn.type='button';
+  btn.textContent='다시 시도';
+  btn.style.cssText='display:block;margin:14px auto 0';
+  btn.onclick=()=>{el.textContent='데이터 불러오는 중...';init()};
+  el.appendChild(btn);
+}
+
+async function init(){
+  applyRoleUI();
+  const painted=paintFromCache();
+  try{
     await loadData();
-    [['channelInput',state.channels],['ownerInput',state.owners]].forEach(([id,list])=>{
-      const sel=document.getElementById(id);
-      sel.innerHTML='';
-      list.forEach(v=>{const opt=document.createElement('option');opt.value=opt.textContent=v;sel.appendChild(opt)});
-    });
+    fillSelects();
     renderAll();
-    document.getElementById('loading').style.display='none';
-    document.getElementById('mainApp').style.display='';
+    showApp();
+    saveCache();
   }catch(err){
-    document.getElementById('loading').textContent='오류: '+err.message;
+    if(!painted)showLoadError(err.message);
+    else console.warn('최신 데이터 갱신 실패, 직전 데이터 표시 중:',err.message);
   }
 }
 document.getElementById('accessCodeButton').onclick=handleAccessCode;
