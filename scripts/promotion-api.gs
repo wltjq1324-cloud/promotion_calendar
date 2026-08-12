@@ -302,3 +302,95 @@ function selfTest() {
   Logger.log(msg);
   return msg;
 }
+
+/**
+ * 쓰기 경로(등록 → 수정 → 삭제) 자체 점검.
+ * 배포하지 않고 편집기에서 실행해 저장/삭제가 제대로 도는지 확인한다.
+ *
+ * 안전장치
+ *   - 제목이 SELFTEST_TITLE 인 임시 행 하나만 만들고 마지막에 지운다
+ *   - 중간에 실패해도 finally 에서 정리한다
+ *   - 기존 프로모션은 절대 건드리지 않는다
+ * 정리가 안 된 잔여 행이 의심되면 cleanupSelfTestRows 를 실행한다.
+ */
+var SELFTEST_TITLE = '[자체점검] 자동 생성 · 곧 삭제됨';
+
+function selfTestWrite() {
+  var lines = [];
+  var id = null;
+  var before = readPromotions_().length;
+  try {
+    var today = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+
+    // 1) 등록
+    var created = upsert_({
+      title: SELFTEST_TITLE,
+      start_date: today,
+      end_date: today,
+      product_name: '[]',
+      channel: '기타',
+      expected_qty_tier: '0',
+      owner: '',
+      memo: 'selfTestWrite',
+      updated_by: 'selfTest'
+    });
+    id = created.id;
+    lines.push('1) 등록 — id 발급 ' + (id ? 'OK (' + id + ')' : '실패'));
+
+    var afterCreate = readPromotions_();
+    var found = afterCreate.filter(function (p) { return p.id === id; })[0];
+    lines.push('2) 조회 — ' + (found ? 'OK' : '실패: 방금 만든 행을 못 찾음'));
+    if (found) {
+      lines.push('   날짜 ' + found.start_date + '~' + found.end_date +
+                 ' / 채널 ' + found.channel + ' / 수정시각 ' + found.updated_at);
+      if (found.start_date !== today) lines.push('   경고: 날짜가 기대와 다름 (기대 ' + today + ')');
+    }
+    lines.push('   행 수 ' + before + ' → ' + afterCreate.length +
+               (afterCreate.length === before + 1 ? ' OK' : ' 경고: 1건 증가가 아님'));
+
+    // 2) 수정 (같은 id 로 다시 저장 → 새 행이 생기면 안 됨)
+    upsert_({
+      id: id, title: SELFTEST_TITLE, start_date: today, end_date: today,
+      product_name: '[]', channel: '자사몰', expected_qty_tier: '1',
+      owner: '', memo: 'selfTestWrite 수정', updated_by: 'selfTest'
+    });
+    var afterUpdate = readPromotions_();
+    var updated = afterUpdate.filter(function (p) { return p.id === id; })[0];
+    lines.push('3) 수정 — ' + (updated && updated.channel === '자사몰' ? 'OK' : '실패: 값이 안 바뀜'));
+    lines.push('   행 수 ' + afterUpdate.length +
+               (afterUpdate.length === before + 1 ? ' OK (중복 생성 없음)' : ' 실패: 행이 늘어남'));
+
+    // 3) 삭제
+    remove_(id);
+    var afterDelete = readPromotions_();
+    var gone = !afterDelete.some(function (p) { return p.id === id; });
+    lines.push('4) 삭제 — ' + (gone ? 'OK' : '실패: 아직 남아 있음'));
+    lines.push('   행 수 ' + afterDelete.length +
+               (afterDelete.length === before ? ' OK (원래대로 복구)' : ' 경고: 원래 수와 다름'));
+    if (gone) id = null; // 정리 완료
+
+    lines.push(lines.join(' ').indexOf('실패') >= 0 ? '쓰기 점검 실패' : '쓰기 점검 통과');
+  } catch (err) {
+    lines.push('쓰기 점검 중 오류: ' + err.message);
+  } finally {
+    // 어떤 이유로든 임시 행이 남았으면 정리
+    if (id) {
+      try { remove_(id); lines.push('(임시 행 정리 완료)'); }
+      catch (e) { lines.push('(임시 행 정리 실패 — cleanupSelfTestRows 를 실행하세요)'); }
+    }
+  }
+  var msg = lines.join('\n');
+  Logger.log(msg);
+  return msg;
+}
+
+/** 자체점검 임시 행이 남아 있으면 모두 제거 */
+function cleanupSelfTestRows() {
+  var removed = 0;
+  readPromotions_().forEach(function (p) {
+    if (p.title === SELFTEST_TITLE) { remove_(p.id); removed++; }
+  });
+  var msg = '자체점검 임시 행 ' + removed + '건 정리';
+  Logger.log(msg);
+  return msg;
+}
