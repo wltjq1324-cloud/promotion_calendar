@@ -669,6 +669,23 @@ async function refreshQuietly(){
   try{await loadData();renderAll();saveCache()}
   catch(err){console.warn('백그라운드 갱신 실패:',err.message)}
 }
+// Apps Script는 시트 기록을 마친 뒤 응답을 넘기는 단계에서 실패하는 일이 있다(HTTP 404 등).
+// 그래서 요청이 실패해도 곧바로 실패로 단정하지 않고, 서버를 다시 읽어 반영 여부를 확인한다.
+async function didMutationApply(check){
+  try{
+    await loadData();renderAll();saveCache();
+    return check();
+  }catch(err){
+    console.warn('반영 확인 실패:',err.message);
+    return false;
+  }
+}
+function samePromotion(p,data){
+  return String(p.title||'')===String(data.title||'')
+    &&String(p.start_date||'')===String(data.start_date||'')
+    &&String(p.end_date||'')===String(data.end_date||'')
+    &&String(p.product_name||'')===String(data.product_name||'');
+}
 
 function normInventoryText(v){
   return String(v||'').toLowerCase().replace(/\[[^\]]+\]/g,'').replace(/감자밭|밭\(주\)|파머스베이크샵/g,'').replace(/[^0-9a-z가-힣]/g,'');
@@ -1590,7 +1607,11 @@ document.getElementById('deleteButton').onclick=async()=>{
     assignColors();renderAll();saveCache();
     refreshQuietly();
   }
-  catch(err){alert('삭제 실패: '+err.message);refreshQuietly()}
+  catch(err){
+    console.warn('삭제 응답 오류:',err.message);
+    const applied=await didMutationApply(()=>!state.promotions.some(p=>String(p.id)===String(id)));
+    if(!applied)alert('삭제 실패: '+err.message);
+  }
   finally{isSaving=false;hideSaving()}
 };
 document.getElementById('promotionForm').onsubmit=async(e)=>{
@@ -1630,7 +1651,12 @@ document.getElementById('promotionForm').onsubmit=async(e)=>{
       await loadData();renderAll();saveCache();
     }
   }
-  catch(err){alert('저장 실패: '+err.message);refreshQuietly()}
+  catch(err){
+    console.warn('저장 응답 오류:',err.message);
+    const applied=await didMutationApply(()=>state.promotions.some(p=>
+      data.id?String(p.id)===String(data.id)&&samePromotion(p,data):samePromotion(p,data)));
+    if(!applied)alert('저장 실패: '+err.message);
+  }
   finally{isSaving=false;hideSaving()}
 };
 
