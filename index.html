@@ -280,6 +280,7 @@ textarea{min-height:80px;resize:vertical}
   </div>
 </section>
 
+<div id="staleBanner" style="display:none;border:2px solid var(--red);border-radius:8px;background:#fff1f0;color:var(--red);padding:12px 16px;margin-bottom:14px;font-size:13px;font-weight:800"></div>
 <section class="action-strip" id="actionStrip" style="display:none">
   <strong>오늘의 액션 &nbsp;</strong><span id="actionContent">오늘 시작 <em>쿠팡,컬리,B마트</em> &nbsp;|&nbsp; 오늘 마감 <em>쿠팡,컬리,B마트</em> &nbsp;|&nbsp; D-3 이내: <em>B마트</em></span>
 </section>
@@ -309,7 +310,7 @@ textarea{min-height:80px;resize:vertical}
 <section class="calendar-shell">
   <div class="calendar-grid" id="calendarGrid"></div>
 </section>
-<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-08-12b</p>
+<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-08-12c</p>
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -668,8 +669,20 @@ async function apiPost(body){
 }
 // 화면을 붙잡지 않고 뒤에서 서버 최신 상태와 맞춘다.
 async function refreshQuietly(){
-  try{await loadData();renderAll();saveCache()}
-  catch(err){console.warn('백그라운드 갱신 실패:',err.message)}
+  try{await loadData();renderAll();saveCache();clearStale()}
+  catch(err){markStale(err.message)}
+}
+// 서버 최신 데이터를 못 받았을 때, 화면에 남아 있는 내용이 옛 것임을 분명히 알린다.
+function markStale(msg){
+  console.warn('최신 데이터 갱신 실패:',msg);
+  const el=document.getElementById('staleBanner');
+  if(!el)return;
+  el.textContent='\u26a0\ufe0f 서버에서 최신 데이터를 받지 못했습니다. 화면 내용은 마지막으로 받은 데이터입니다. ('+msg+')';
+  el.style.display='';
+}
+function clearStale(){
+  const el=document.getElementById('staleBanner');
+  if(el)el.style.display='none';
 }
 // Apps Script는 시트 기록을 마친 뒤 응답을 넘기는 단계에서 실패하는 일이 있다(HTTP 404 등).
 // 그래서 요청이 실패해도 곧바로 실패로 단정하지 않고, 서버를 다시 읽어 반영 여부를 확인한다.
@@ -1742,9 +1755,10 @@ async function init(){
     renderAll();
     showApp();
     saveCache();
+    clearStale();
   }catch(err){
     if(!painted)showLoadError(err.message);
-    else console.warn('최신 데이터 갱신 실패, 직전 데이터 표시 중:',err.message);
+    else markStale(err.message);
   }
 }
 document.getElementById('accessCodeButton').onclick=handleAccessCode;
