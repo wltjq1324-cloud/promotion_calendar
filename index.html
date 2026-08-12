@@ -2,6 +2,7 @@
 <!-- saved from url=(0014)about:internet -->
 <html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OURBOX 프로모션 운영 캘린더 (편집)</title>
 <style>
@@ -308,6 +309,7 @@ textarea{min-height:80px;resize:vertical}
 <section class="calendar-shell">
   <div class="calendar-grid" id="calendarGrid"></div>
 </section>
+<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-08-12b</p>
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -636,8 +638,8 @@ async function fetchJson(url,options,{tries=3,timeout=15000}={}){
   throw lastErr;
 }
 
-async function loadData(){
-  const data=await fetchJson(`${API}?action=load&role=${apiRole()}&t=${Date.now()}`);
+async function loadData(opts){
+  const data=await fetchJson(`${API}?action=load&role=${apiRole()}&t=${Date.now()}`,undefined,opts);
   if(data.error)throw new Error(data.error);
   state.promotions=data.promotions||[];
   if(ROLE==='external'){
@@ -661,7 +663,7 @@ async function loadData(){
 async function apiPost(body){
   const r=await fetchJson(API,
     {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)},
-    {tries:1,timeout:25000});
+    {tries:1,timeout:15000});
   if(r.error)throw new Error(r.error);return r;
 }
 // 화면을 붙잡지 않고 뒤에서 서버 최신 상태와 맞춘다.
@@ -673,7 +675,7 @@ async function refreshQuietly(){
 // 그래서 요청이 실패해도 곧바로 실패로 단정하지 않고, 서버를 다시 읽어 반영 여부를 확인한다.
 async function didMutationApply(check){
   try{
-    await loadData();renderAll();saveCache();
+    await loadData({tries:1,timeout:10000});renderAll();saveCache();
     return check();
   }catch(err){
     console.warn('반영 확인 실패:',err.message);
@@ -1093,8 +1095,26 @@ async function openInventoryModal(){
 }
 function closeInventoryModal(){document.getElementById('inventoryBackdrop').classList.remove('open')}
 
-function showSaving(){document.getElementById('savingOverlay').classList.add('open');document.getElementById('submitButton').disabled=true;document.getElementById('deleteButton').disabled=true}
-function hideSaving(){document.getElementById('savingOverlay').classList.remove('open');document.getElementById('submitButton').disabled=false;document.getElementById('deleteButton').disabled=false}
+// 어떤 경로로든 오버레이가 남지 않도록 하는 최후 안전장치.
+let savingWatchdog=null;
+function showSaving(){
+  document.getElementById('savingOverlay').classList.add('open');
+  document.getElementById('submitButton').disabled=true;
+  document.getElementById('deleteButton').disabled=true;
+  clearTimeout(savingWatchdog);
+  savingWatchdog=setTimeout(()=>{
+    if(document.getElementById('savingOverlay').classList.contains('open')){
+      console.warn('저장 오버레이 강제 종료 (20초 초과)');
+      isSaving=false;hideSaving();refreshQuietly();
+    }
+  },20000);
+}
+function hideSaving(){
+  clearTimeout(savingWatchdog);savingWatchdog=null;
+  document.getElementById('savingOverlay').classList.remove('open');
+  document.getElementById('submitButton').disabled=false;
+  document.getElementById('deleteButton').disabled=false;
+}
 
 function getWeeks(y,m){
   const first=new Date(y,m,1),last=new Date(y,m+1,0);
@@ -1599,6 +1619,7 @@ document.getElementById('deleteButton').onclick=async()=>{
   if(isSaving)return;
   if(!confirm('정말 삭제하시겠습니까?'))return;
   isSaving=true;
+  let failure=null;
   const id=document.getElementById('editingId').value;
   closeModal();showSaving();
   try{
@@ -1607,12 +1628,14 @@ document.getElementById('deleteButton').onclick=async()=>{
     assignColors();renderAll();saveCache();
     refreshQuietly();
   }
-  catch(err){
-    console.warn('삭제 응답 오류:',err.message);
-    const applied=await didMutationApply(()=>!state.promotions.some(p=>String(p.id)===String(id)));
-    if(!applied)alert('삭제 실패: '+err.message);
-  }
+  catch(err){failure=err}
   finally{isSaving=false;hideSaving()}
+  // 확인 조회는 오버레이를 닫은 뒤에 한다. 실패 경로가 화면을 붙잡지 않도록.
+  if(failure){
+    console.warn('삭제 응답 오류:',failure.message);
+    const applied=await didMutationApply(()=>!state.promotions.some(p=>String(p.id)===String(id)));
+    if(!applied)alert('삭제 실패: '+failure.message);
+  }
 };
 document.getElementById('promotionForm').onsubmit=async(e)=>{
   e.preventDefault();
@@ -1634,7 +1657,7 @@ document.getElementById('promotionForm').onsubmit=async(e)=>{
     updated_by:USER
   };
   if(data.start_date>data.end_date){alert('종료일은 시작일 이후여야 합니다.');return}
-  isSaving=true;closeModal();showSaving();
+  isSaving=true;let failure=null;closeModal();showSaving();
   try{
     const saved=await apiPost({action:'upsert',role:apiRole(),data});
     // 서버가 저장된 id를 돌려주면 화면만 즉시 갱신하고, 아니면 신규 id를 얻기 위해 재조회한다.
@@ -1651,13 +1674,14 @@ document.getElementById('promotionForm').onsubmit=async(e)=>{
       await loadData();renderAll();saveCache();
     }
   }
-  catch(err){
-    console.warn('저장 응답 오류:',err.message);
+  catch(err){failure=err}
+  finally{isSaving=false;hideSaving()}
+  if(failure){
+    console.warn('저장 응답 오류:',failure.message);
     const applied=await didMutationApply(()=>state.promotions.some(p=>
       data.id?String(p.id)===String(data.id)&&samePromotion(p,data):samePromotion(p,data)));
-    if(!applied)alert('저장 실패: '+err.message);
+    if(!applied)alert('저장 실패: '+failure.message);
   }
-  finally{isSaving=false;hideSaving()}
 };
 
 // ===== 초기화 =====
