@@ -613,20 +613,25 @@ function assignColors(){
 }
 function getColor(id){return COLORS[state.colorMap[id]??0]}
 
-// Apps Script는 간헐적으로 JSON 대신 HTML 오류 페이지를 반환한다. 재시도 후 실패하면 사람이 읽을 수 있는 메시지로 바꾼다.
-async function fetchJson(url,options,tries=3){
+// Apps Script는 간헐적으로 JSON 대신 HTML 오류 페이지를 반환하고, 부하가 걸리면 응답 없이 연결을 붙잡고 있기도 한다.
+// timeout 으로 무한 대기를 끊고, 조회(GET)만 재시도한다. 저장(POST)은 중복 생성 위험이 있어 재시도하지 않는다.
+async function fetchJson(url,options,{tries=3,timeout=15000}={}){
   let lastErr;
   for(let i=0;i<tries;i++){
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),timeout);
     try{
-      const res=await fetch(url,options);
+      const res=await fetch(url,{...options,signal:ctrl.signal});
       const text=await res.text();
       if(!res.ok)throw new Error(`서버 응답 오류 (HTTP ${res.status})`);
       try{return JSON.parse(text)}
       catch(e){throw new Error('서버가 데이터 대신 오류 페이지를 반환했습니다.')}
     }catch(err){
-      lastErr=err;
+      lastErr=err&&err.name==='AbortError'
+        ? new Error(`서버 응답이 ${Math.round(timeout/1000)}초 넘게 없어 중단했습니다.`)
+        : err;
       if(i<tries-1)await new Promise(r=>setTimeout(r,700*Math.pow(2,i)));
-    }
+    }finally{clearTimeout(timer)}
   }
   throw lastErr;
 }
@@ -654,8 +659,15 @@ async function loadData(){
   assignColors();
 }
 async function apiPost(body){
-  const r=await fetchJson(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  const r=await fetchJson(API,
+    {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)},
+    {tries:1,timeout:25000});
   if(r.error)throw new Error(r.error);return r;
+}
+// 화면을 붙잡지 않고 뒤에서 서버 최신 상태와 맞춘다.
+async function refreshQuietly(){
+  try{await loadData();renderAll();saveCache()}
+  catch(err){console.warn('백그라운드 갱신 실패:',err.message)}
 }
 
 function normInventoryText(v){
@@ -1572,8 +1584,13 @@ document.getElementById('deleteButton').onclick=async()=>{
   isSaving=true;
   const id=document.getElementById('editingId').value;
   closeModal();showSaving();
-  try{await apiPost({action:'delete',role:apiRole(),id});await loadData();renderAll();saveCache()}
-  catch(err){alert('삭제 실패: '+err.message)}
+  try{
+    await apiPost({action:'delete',role:apiRole(),id});
+    state.promotions=state.promotions.filter(p=>String(p.id)!==String(id));
+    assignColors();renderAll();saveCache();
+    refreshQuietly();
+  }
+  catch(err){alert('삭제 실패: '+err.message);refreshQuietly()}
   finally{isSaving=false;hideSaving()}
 };
 document.getElementById('promotionForm').onsubmit=async(e)=>{
@@ -1597,8 +1614,23 @@ document.getElementById('promotionForm').onsubmit=async(e)=>{
   };
   if(data.start_date>data.end_date){alert('종료일은 시작일 이후여야 합니다.');return}
   isSaving=true;closeModal();showSaving();
-  try{await apiPost({action:'upsert',role:apiRole(),data});await loadData();renderAll();saveCache()}
-  catch(err){alert('저장 실패: '+err.message)}
+  try{
+    const saved=await apiPost({action:'upsert',role:apiRole(),data});
+    // 서버가 저장된 id를 돌려주면 화면만 즉시 갱신하고, 아니면 신규 id를 얻기 위해 재조회한다.
+    const serverId=saved&&(saved.id||(saved.data&&saved.data.id)||(saved.promotion&&saved.promotion.id));
+    const id=data.id||serverId;
+    if(id){
+      const rec={...data,id,updated_at:toKey(new Date())+' '+new Date().toTimeString().slice(0,5)};
+      const i=state.promotions.findIndex(p=>String(p.id)===String(id));
+      if(i>=0)state.promotions[i]={...state.promotions[i],...rec};
+      else state.promotions.push(rec);
+      assignColors();renderAll();saveCache();
+      refreshQuietly();
+    }else{
+      await loadData();renderAll();saveCache();
+    }
+  }
+  catch(err){alert('저장 실패: '+err.message);refreshQuietly()}
   finally{isSaving=false;hideSaving()}
 };
 
