@@ -65,8 +65,6 @@ var CONFIG = {
 var SITE = {
   MAPPING_SS_ID: '1FGxRu59DL7SMB4siYE_IZiTU5rNrHWefIeI9e_Hqazs', // OURBOX_프로모션_운영_DB
   MAPPING_SHEET: 'sku_mapping',
-  // /inven 페이지와 동일한 데이터 소스
-  DASHBOARD_CACHE_URL: 'https://script.google.com/macros/s/AKfycbwi5lQEGI8caIRxVmJWKPaad0G07cAKWkXF52YYzpKJhJ2dV21QggZ1jdx3nxHP-eCpNQ/exec?mode=cache',
   INVENTORY_JSON_URL: 'https://wltjq1324-cloud.github.io/promotion_calendar/inventory-latest.json',
   RECENT_DAYS: 60, // 최근 N일 내 출고된 상품만 동기화 대상
   MAX_NAME_SLOTS: 6 // inventory_product_name_1~6
@@ -109,7 +107,7 @@ function resetAlertMemory() {
 
 /**
  * /inven 페이지가 읽는 운영_DB sku_mapping 탭을 자동 갱신한다.
- *  1) 대시보드 출고 캐시에서 최근 RECENT_DAYS일 상품 목록 수집
+ *  1) 출고 원본 시트(raw_orders)에서 최근 RECENT_DAYS일 상품 목록 수집
  *  2) sku_mapping 에 이미 있는 상품은 건너뜀 (append-only)
  *  3) 기존 매핑 행 + 실시간 재고 상품명으로 자동 매칭:
  *     - 단품 완전일치            → 자동 (needs_review FALSE)
@@ -162,7 +160,7 @@ function runSkuMappingSync() {
 
   // 대시보드 최근 상품
   var dash = fetchDashboardProducts_();
-  if (!dash.products.length) { Logger.log('대시보드 캐시에 상품 없음.'); return; }
+  if (!dash.products.length) { Logger.log('출고 원본에 최근 상품 없음.'); return; }
 
   var newOnes = dash.products.filter(function (p) { return !existing[normalize_(p.name)]; });
   if (!newOnes.length) { Logger.log('sku_mapping: 신규 상품 없음.'); return; }
@@ -207,22 +205,48 @@ function runSkuMappingSync() {
   Logger.log('sku_mapping: ' + rows.length + '행 추가 (미매핑 ' + unmappedForMail.length + ')');
 }
 
-/** 대시보드 출고 캐시에서 최근 상품 목록 */
+/**
+ * 출고 원본 시트(raw_orders)를 직접 읽어 최근 상품 목록을 만든다.
+ *
+ * 예전에는 대시보드 캐시 웹앱을 거쳤으나
+ *   - 그 웹앱이 멈추면 매핑 동기화도 함께 멈추고
+ *   - 캐시 갱신 시점만큼 데이터가 늦어진다.
+ * 어차피 같은 데이터를 보므로 원본을 직접 읽는다. (읽기만 하며 원본은 수정하지 않는다)
+ */
 function fetchDashboardProducts_() {
-  var res = UrlFetchApp.fetch(SITE.DASHBOARD_CACHE_URL + '&t=' + new Date().getTime(), { muteHttpExceptions: true, followRedirects: true });
-  if (res.getResponseCode() !== 200) throw new Error('대시보드 캐시 HTTP ' + res.getResponseCode());
-  var data = JSON.parse(res.getContentText());
-  var rows = (data.dashboardCache && data.dashboardCache.productRows) || [];
-  var latest = '';
-  rows.forEach(function (r) { if (r.date && r.date > latest) latest = r.date; });
-  var cutoff = latest ? shiftDateKey_(latest, -SITE.RECENT_DAYS) : '';
+  var sheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.ORDERS_SHEET);
+  if (!sheet) throw new Error('탭 "' + CONFIG.ORDERS_SHEET + '" 을 찾지 못했습니다.');
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) return { latestDate: '', products: [] };
+
+  var header = values[0];
+  var iName = header.indexOf(CONFIG.ORDERS_ITEM_HEADER);
+  var iDate = header.indexOf(CONFIG.ORDERS_DATE_HEADER);
+  var iQty = header.indexOf('수량');
+  if (iName < 0) throw new Error('raw_orders 에서 "' + CONFIG.ORDERS_ITEM_HEADER + '" 헤더를 찾지 못했습니다.');
+
+  // 1) 최신 출고일 파악
+  var latestD = null;
+  for (var r = 1; r < values.length; r++) {
+    var d = iDate >= 0 ? parseDate_(values[r][iDate]) : null;
+    if (d && (!latestD || d > latestD)) latestD = d;
+  }
+  var latest = latestD ? formatDate_(latestD) : '';
+  var cutoffD = latestD ? new Date(latestD.getTime()) : null;
+  if (cutoffD) cutoffD.setDate(cutoffD.getDate() - SITE.RECENT_DAYS);
+
+  // 2) 최근 구간 상품별 수량 집계
   var agg = {};
-  rows.forEach(function (r) {
-    if (!r.product || !r.date || (cutoff && r.date < cutoff)) return;
-    var key = normalize_(r.product);
-    if (!agg[key]) agg[key] = { name: String(r.product).trim(), qty: 0 };
-    agg[key].qty += Number(r.qty) || 0;
-  });
+  for (var i = 1; i < values.length; i++) {
+    var name = String(values[i][iName] || '').trim();
+    if (!name) continue;
+    var od = iDate >= 0 ? parseDate_(values[i][iDate]) : null;
+    if (cutoffD && od && od < cutoffD) continue;
+    var key = normalize_(name);
+    if (!key) continue;
+    if (!agg[key]) agg[key] = { name: name, qty: 0 };
+    agg[key].qty += iQty >= 0 ? (Number(values[i][iQty]) || 0) : 1;
+  }
   return { latestDate: latest, products: Object.keys(agg).map(function (k) { return agg[k]; }) };
 }
 
