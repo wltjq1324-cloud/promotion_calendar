@@ -310,7 +310,7 @@ textarea{min-height:80px;resize:vertical}
 <section class="calendar-shell">
   <div class="calendar-grid" id="calendarGrid"></div>
 </section>
-<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-08-12c</p>
+<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-08-12d</p>
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -1275,7 +1275,10 @@ function renderCalendar(){
         bar.className=`promo-bar ${posClass}`;
         bar.style.background=color;
         bar.dataset.promoId=p.id;
-        if(getRoleConfig().canOpenDetail){
+        if(p._pending){
+          bar.style.opacity='.65';
+          bar.title='저장 중입니다. 잠시 후 확정됩니다.';
+        }else if(getRoleConfig().canOpenDetail){
           bar.onclick=()=>openEditModal(p);
         }else{
           bar.onclick=null;
@@ -1684,7 +1687,12 @@ document.getElementById('promotionForm').onsubmit=async(e)=>{
       assignColors();renderAll();saveCache();
       refreshQuietly();
     }else{
-      await loadData();renderAll();saveCache();
+      // 서버가 id를 돌려주지 않는 버전이어도 기다리지 않는다.
+      // 임시 항목으로 즉시 그려 주고, 뒤이어 서버 데이터로 교체한다.
+      state.promotions.push({...data,id:'tmp'+Date.now(),_pending:true,
+        updated_at:toKey(new Date())+' '+new Date().toTimeString().slice(0,5)});
+      assignColors();renderAll();
+      refreshQuietly();
     }
   }
   catch(err){failure=err}
@@ -1716,7 +1724,8 @@ function saveCache(){
   try{
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       at:Date.now(),role:ROLE,
-      promotions:state.promotions,products:state.products,priceMap:state.priceMap,
+      promotions:state.promotions.filter(p=>!p._pending),
+      products:state.products,priceMap:state.priceMap,
       channels:state.channels,owners:state.owners
     }));
   }catch(e){}
