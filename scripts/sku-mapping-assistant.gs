@@ -67,7 +67,14 @@ var SITE = {
   MAPPING_SHEET: 'sku_mapping',
   VELOCITY_SHEET: 'velocity_cache', // /inven 이 읽는 출고 집계 탭 (이 스크립트가 만든다)
   INVENTORY_JSON_URL: 'https://wltjq1324-cloud.github.io/promotion_calendar/inventory-latest.json',
-  RECENT_DAYS: 60, // 최근 N일 내 출고된 상품만 동기화 대상
+  // 두 용도의 기간이 다르다.
+  //  - VELOCITY_DAYS: /inven 의 소진예상 계산용. /inven 은 30일 밖 데이터를 버리므로
+  //                   그보다 길게 쌓으면 읽자마자 버려질 데이터를 옮기는 셈이다.
+  //                   (7일/14일/30일 출고 집계, 일평균 = 14일 출고 ÷ 14)
+  //  - RECENT_DAYS:   신규 상품 감지용. 최근에 한 번이라도 나간 품목은 매핑해 두는 게
+  //                   나으므로 더 넓게 본다.
+  VELOCITY_DAYS: 30,
+  RECENT_DAYS: 60,
   MAX_NAME_SLOTS: 6 // inventory_product_name_1~6
 };
 
@@ -137,7 +144,7 @@ function rebuildVelocityCache() {
   }
   if (!latestD) { Logger.log('출고일을 해석할 수 없습니다.'); return; }
   var cutoffD = new Date(latestD.getTime());
-  cutoffD.setDate(cutoffD.getDate() - SITE.RECENT_DAYS);
+  cutoffD.setDate(cutoffD.getDate() - SITE.VELOCITY_DAYS);
 
   var agg = {};
   for (var i = 1; i < values.length; i++) {
@@ -161,7 +168,7 @@ function rebuildVelocityCache() {
   dst.clear();
   dst.getRange(1, 1, out.length, 3).setValues(out);
 
-  Logger.log('출고 집계: ' + (out.length - 1) + '행 기록 (최신 ' + formatDate_(latestD) + ', 최근 ' + SITE.RECENT_DAYS + '일)');
+  Logger.log('출고 집계: ' + (out.length - 1) + '행 기록 (최신 ' + formatDate_(latestD) + ', 최근 ' + SITE.VELOCITY_DAYS + '일)');
 }
 
 /* ===================== [사이트] sku_mapping 자동 동기화 ===================== */
