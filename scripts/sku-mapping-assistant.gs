@@ -65,6 +65,7 @@ var CONFIG = {
 var SITE = {
   MAPPING_SS_ID: '1FGxRu59DL7SMB4siYE_IZiTU5rNrHWefIeI9e_Hqazs', // OURBOX_프로모션_운영_DB
   MAPPING_SHEET: 'sku_mapping',
+  VELOCITY_SHEET: 'velocity_cache', // /inven 이 읽는 출고 집계 탭 (이 스크립트가 만든다)
   INVENTORY_JSON_URL: 'https://wltjq1324-cloud.github.io/promotion_calendar/inventory-latest.json',
   RECENT_DAYS: 60, // 최근 N일 내 출고된 상품만 동기화 대상
   MAX_NAME_SLOTS: 6 // inventory_product_name_1~6
@@ -85,6 +86,7 @@ function setup() {
 /** 매일 실행: 사이트용 sku_mapping 동기화 → 내부 map_product 어시스턴트 */
 function runDailyPipeline() {
   var errors = [];
+  try { rebuildVelocityCache(); } catch (e) { errors.push('출고 집계: ' + e.message); }
   try { runSkuMappingSync(); } catch (e) { errors.push('sku_mapping 동기화: ' + e.message); }
   try { runMappingAssistant(); } catch (e) { errors.push('map_product 어시스턴트: ' + e.message); }
   if (errors.length) throw new Error(errors.join(' / '));
@@ -101,6 +103,65 @@ function removeTriggers_() {
 function resetAlertMemory() {
   PropertiesService.getScriptProperties().deleteProperty('alertedItems');
   PropertiesService.getScriptProperties().deleteProperty('siteAlertedItems');
+}
+
+/* ===================== [사이트] 출고 집계 캐시 ===================== */
+
+/**
+ * /inven 페이지가 쓰던 대시보드 캐시 웹앱을 대체한다.
+ *
+ * 출고 원본(raw_orders)을 읽어 "날짜 × 상품 = 수량" 으로 집계하고,
+ * 운영_DB 의 velocity_cache 탭에 기록한다. /inven 은 이 탭을 CSV 로 읽는다.
+ * (운영_DB 는 이미 링크 공개 상태이고, 같은 집계를 예전 웹앱도 공개로 제공했으므로
+ *  공개 범위가 넓어지지는 않는다.)
+ *
+ * 출고 원본 시트는 읽기만 하며 수정하지 않는다.
+ */
+function rebuildVelocityCache() {
+  var src = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.ORDERS_SHEET);
+  if (!src) throw new Error('탭 "' + CONFIG.ORDERS_SHEET + '" 을 찾지 못했습니다.');
+  var values = src.getDataRange().getValues();
+  if (values.length < 2) { Logger.log('출고 원본이 비어 있습니다.'); return; }
+
+  var header = values[0];
+  var iName = header.indexOf(CONFIG.ORDERS_ITEM_HEADER);
+  var iDate = header.indexOf(CONFIG.ORDERS_DATE_HEADER);
+  var iQty = header.indexOf('수량');
+  if (iName < 0 || iDate < 0) throw new Error('raw_orders 에서 품목명/주문일시 헤더를 찾지 못했습니다.');
+
+  // 최신 출고일 기준 최근 구간만 집계 (오래된 데이터는 소진예상 계산에 쓰이지 않는다)
+  var latestD = null;
+  for (var r = 1; r < values.length; r++) {
+    var d = parseDate_(values[r][iDate]);
+    if (d && (!latestD || d > latestD)) latestD = d;
+  }
+  if (!latestD) { Logger.log('출고일을 해석할 수 없습니다.'); return; }
+  var cutoffD = new Date(latestD.getTime());
+  cutoffD.setDate(cutoffD.getDate() - SITE.RECENT_DAYS);
+
+  var agg = {};
+  for (var i = 1; i < values.length; i++) {
+    var name = String(values[i][iName] || '').trim();
+    if (!name) continue;
+    var od = parseDate_(values[i][iDate]);
+    if (!od || od < cutoffD) continue;
+    var key = formatDate_(od) + '\u0000' + name;
+    if (!agg[key]) agg[key] = { date: formatDate_(od), product: name, qty: 0 };
+    agg[key].qty += iQty >= 0 ? (Number(values[i][iQty]) || 0) : 1;
+  }
+
+  var out = [['date', 'product', 'qty']];
+  Object.keys(agg).sort().forEach(function (k) {
+    out.push([agg[k].date, agg[k].product, agg[k].qty]);
+  });
+
+  var ss = SpreadsheetApp.openById(SITE.MAPPING_SS_ID);
+  var dst = ss.getSheetByName(SITE.VELOCITY_SHEET);
+  if (!dst) dst = ss.insertSheet(SITE.VELOCITY_SHEET);
+  dst.clear();
+  dst.getRange(1, 1, out.length, 3).setValues(out);
+
+  Logger.log('출고 집계: ' + (out.length - 1) + '행 기록 (최신 ' + formatDate_(latestD) + ', 최근 ' + SITE.RECENT_DAYS + '일)');
 }
 
 /* ===================== [사이트] sku_mapping 자동 동기화 ===================== */
