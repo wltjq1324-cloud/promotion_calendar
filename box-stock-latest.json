@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-09-18 10:11:20",
+ "generated_at": "2026-09-18 10:19:31",
  "source": "ourbox-openapi",
- "api_calls": 215,
- "fetched_days": 23,
- "elapsed_ms": 269846,
+ "api_calls": 47,
+ "fetched_days": 4,
+ "elapsed_ms": 54680,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -30,9 +30,10 @@
    "count": {
     "date": "2026-08-27",
     "dtm": "2026-08-27 10:47:11",
-    "qty": 6048,
+    "qty": 4662,
+    "afQtyRaw": 6048,
     "adjQty": -2684,
-    "source": "adjustment"
+    "source": "ledger_identity"
    },
    "receipts": {
     "qty": 3240,
@@ -53,23 +54,25 @@
     "boxes": 6408,
     "adjusted": 7049,
     "since": "2026-08-27",
-    "unknownShare": 0
+    "unknownShare": 0,
+    "substituted": 0
    },
-   "est": 2239,
+   "est": 853,
+   "rawEst": 853,
    "apiStock": {
     "total": 7902,
     "available": 7902,
     "unavailable": 0,
-    "expected": 9288,
-    "diff": -1386
+    "expected": 7902,
+    "diff": 0
    },
    "weekAvg": 2440,
    "weekMax8": 2304,
    "target": 5856,
-   "orderQty": 3672,
-   "daysCover": 6.4,
+   "orderQty": 5040,
+   "daysCover": 2.4,
    "warnings": [
-    "API 장부재고 7,902 ≠ 실사잔고+입고 9,288 (차이 -1,386)"
+    "조정 이력 af_qty 합 6,048 ≠ 장부 역산 4,662 — 장부 역산 값을 사용"
    ]
   },
   {
@@ -83,9 +86,10 @@
    "count": {
     "date": "2026-08-27",
     "dtm": "2026-08-27 10:47:57",
-    "qty": 5100,
+    "qty": 3546,
+    "afQtyRaw": 5100,
     "adjQty": -1621,
-    "source": "adjustment"
+    "source": "ledger_identity"
    },
    "receipts": {
     "qty": 2000,
@@ -106,23 +110,25 @@
     "boxes": 2381,
     "adjusted": 2714,
     "since": "2026-08-27",
-    "unknownShare": 0
+    "unknownShare": 0,
+    "substituted": 0
    },
-   "est": 4386,
+   "est": 2832,
+   "rawEst": 2832,
    "apiStock": {
     "total": 5546,
     "available": 5546,
     "unavailable": 0,
-    "expected": 7100,
-    "diff": -1554
+    "expected": 5546,
+    "diff": 0
    },
    "weekAvg": 852,
    "weekMax8": 754,
    "target": 2045,
    "orderQty": 0,
-   "daysCover": 36,
+   "daysCover": 23.3,
    "warnings": [
-    "API 장부재고 5,546 ≠ 실사잔고+입고 7,100 (차이 -1,554)"
+    "조정 이력 af_qty 합 5,100 ≠ 장부 역산 3,546 — 장부 역산 값을 사용"
    ]
   },
   {
@@ -136,9 +142,10 @@
    "count": {
     "date": "2026-08-27",
     "dtm": "2026-08-27 10:50:52",
-    "qty": 1302,
+    "qty": 434,
+    "afQtyRaw": 1302,
     "adjQty": -492,
-    "source": "adjustment"
+    "source": "ledger_identity"
    },
    "receipts": {
     "qty": 150,
@@ -159,23 +166,26 @@
     "boxes": 1067,
     "adjusted": 1067,
     "since": "2026-08-27",
-    "unknownShare": 0
+    "unknownShare": 0,
+    "substituted": 483
    },
-   "est": 385,
+   "est": 0,
+   "rawEst": -483,
    "apiStock": {
     "total": 584,
     "available": 584,
     "unavailable": 0,
-    "expected": 1452,
-    "diff": -868
+    "expected": 584,
+    "diff": 0
    },
    "weekAvg": 382,
    "weekMax8": 477,
    "target": 917,
-   "orderQty": 540,
-   "daysCover": 7.1,
+   "orderQty": 920,
+   "daysCover": 0,
    "warnings": [
-    "API 장부재고 584 ≠ 실사잔고+입고 1,452 (차이 -868)"
+    "조정 이력 af_qty 합 1,302 ≠ 장부 역산 434 — 장부 역산 값을 사용",
+    "출고 박스가 재고를 483 초과 — 다른 호수로 대체 포장한 것으로 추정. 실물 확인 필요"
    ]
   }
  ],
@@ -695,7 +705,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:19:31"
   },
   {
    "date": "2026-08-28",
@@ -1095,7 +1105,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:19:31"
   },
   {
    "date": "2026-09-17",
@@ -1115,7 +1125,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:19:31"
   },
   {
    "date": "2026-09-18",
@@ -1135,7 +1145,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:19:31"
   }
  ],
  "warnings": []
