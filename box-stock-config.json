@@ -8,6 +8,8 @@
   "usageOnly": [
     { "key": "b4", "label": "4호(아워박스 3호)", "note": "아워박스 소유 박스. 밭 재고 아님, 사용량만 집계" }
   ],
+  "lookupOverrides": {},
+  "lookupOverridesNote": "송장 서명(예: \"G-O142x1\") → 박스 키(b1/b2/b3/b4) 강제 지정. 룩업이 현재 포장 관행과 다를 때만 사용.",
   "leadTimeDays": 7,
   "reviewDays": 7,
   "safetyRate": 0.2,

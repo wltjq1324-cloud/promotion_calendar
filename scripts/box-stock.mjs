@@ -81,6 +81,8 @@ export function signatureOf(lines, codeKey = 'code') {
 export function classifyInvoice(lines, lookup) {
   const total = lines.reduce((s, l) => s + toInt(l.qty), 0);
   const sigC = signatureOf(lines, 'code');
+  const ov = lookup.overrides && lookup.overrides[sigC];
+  if (ov) return { box: ov, method: 'lookup', sig: sigC, total };
   const hitC = lookup.byCompany && lookup.byCompany[sigC];
   if (hitC) return { box: hitC[0], method: 'lookup', sig: sigC, total };
   const sigP = signatureOf(lines, 'productCode');
@@ -224,7 +226,27 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
   if (invTotal) unknownShare = Math.round((unknownTotal / invTotal) * 1000) / 10;
   const inQty = receipts.reduce((s, r) => s + r.qty, 0);
   const adjusted = Math.round(boxes * item.factor);
-  const est = anchor.afQty + inQty - adjusted;
+  const warnings = [];
+  // 실사 후 잔고: 조정 이력의 af_qty 는 셀 단위 값이라 품목 합계가 아니다(실측: 수불표와 불일치).
+  // 장부재고는 실사 사이에 움직이지 않으므로 "장부재고 − 실사 이후 입고" 가 실사 후 잔고와 정확히 같다.
+  let anchorQty = anchor.afQty;
+  let anchorSource = anchor.source;
+  if (apiStock && Number.isFinite(apiStock.total) && anchor.source === 'adjustment') {
+    anchorQty = apiStock.total - inQty;
+    anchorSource = 'ledger_identity';
+    if (Math.abs(anchor.afQty - anchorQty) > Math.max(5, anchorQty * 0.02)) {
+      warnings.push(`조정 이력 af_qty 합 ${anchor.afQty.toLocaleString('ko-KR')} ≠ 장부 역산 ${anchorQty.toLocaleString('ko-KR')} — 장부 역산 값을 사용`);
+    }
+  }
+  const rawEst = anchorQty + inQty - adjusted;
+  let est = rawEst;
+  let substituted = 0;
+  if (rawEst < 0) {
+    // 있는 것보다 더 쓸 수는 없다. 초과분은 다른 박스로 대체 포장한 것으로 본다(3호↔4호 실측).
+    substituted = -rawEst;
+    est = 0;
+    warnings.push(`출고 박스가 재고를 ${substituted.toLocaleString('ko-KR')} 초과 — 다른 호수로 대체 포장한 것으로 추정. 실물 확인 필요`);
+  }
   const full = weekly.filter((w) => !w.partial);
   const lastN = full.slice(-cfg.avgWeeks);
   const weekAvg = lastN.length
@@ -233,21 +255,17 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
   const weekMax8 = full.length ? Math.max(...full.map((w) => (w[item.key] || 0))) : 0;
   const sug = orderSuggestion({ weekAvg, est, bundle: item.bundle,
     leadTimeDays: cfg.leadTimeDays, reviewDays: cfg.reviewDays, safetyRate: cfg.safetyRate });
-  const expected = anchor.afQty + inQty;
-  const warnings = [];
+  const expected = anchorQty + inQty;
   if (anchor.source !== 'adjustment') warnings.push('최근 실사 조정 이력이 없어 API 장부재고를 기준점으로 삼았습니다.');
-  if (apiStock && Number.isFinite(apiStock.total) && Math.abs(apiStock.total - expected) > Math.max(5, expected * 0.02)) {
-    warnings.push(`API 장부재고 ${apiStock.total.toLocaleString('ko-KR')} ≠ 실사잔고+입고 ${expected.toLocaleString('ko-KR')} (차이 ${(apiStock.total - expected).toLocaleString('ko-KR')})`);
-  }
-  if (est <= 0) warnings.push('추정 실재고가 0 이하입니다. 실물 확인이 필요합니다.');
+  if (est <= 0 && !substituted) warnings.push('추정 실재고가 0 이하입니다. 실물 확인이 필요합니다.');
   if (unknownShare >= 15) warnings.push(`박스 종류 미판정 송장 ${unknownShare}% — box-lookup 갱신 필요`);
   return {
     key: item.key, label: item.label, name: item.name, companyCode: item.companyCode,
     productCode: item.productCode, bundle: item.bundle, factor: item.factor,
-    count: { date: anchor.date, dtm: anchor.dtm, qty: anchor.afQty, adjQty: anchor.adjQty, source: anchor.source },
+    count: { date: anchor.date, dtm: anchor.dtm, qty: anchorQty, afQtyRaw: anchor.afQty, adjQty: anchor.adjQty, source: anchorSource },
     receipts: { qty: inQty, list: receipts },
-    usage: { boxes, adjusted, since, unknownShare },
-    est, apiStock: apiStock ? { ...apiStock, expected, diff: apiStock.total - expected } : null,
+    usage: { boxes, adjusted, since, unknownShare, substituted },
+    est, rawEst, apiStock: apiStock ? { ...apiStock, expected, diff: apiStock.total - expected } : null,
     weekAvg, weekMax8, ...sug, warnings,
   };
 }
@@ -297,6 +315,7 @@ async function fetchPages(pathname, body, listKey, k, cfg, maxPages = 100) {
 export async function main() {
   const cfg = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
   const lookup = JSON.parse(readFileSync(LOOKUP_PATH, 'utf8'));
+  lookup.overrides = cfg.lookupOverrides || {};
   const dailyStore = existsSync(DAILY_PATH) ? JSON.parse(readFileSync(DAILY_PATH, 'utf8')) : { version: 1, days: {} };
   const prev = existsSync(OUT_PATH) ? JSON.parse(readFileSync(OUT_PATH, 'utf8')) : {};
   const k = keys();

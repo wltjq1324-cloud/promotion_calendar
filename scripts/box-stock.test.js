@@ -92,8 +92,17 @@ const eq = (name, got, want) => {
     cfg: { avgWeeks: 4, leadTimeDays: 7, reviewDays: 7, safetyRate: 0.2 }, weekly: wk,
   });
   eq('차감 = 실사당일 10 + 9/13~19 700', r.usage.boxes, 710);
+  eq('실사 잔고 = 장부 1144 − 입고 144 (af_qty 무시)', [r.count.qty, r.count.source], [1000, 'ledger_identity']);
   eq('실재고 = 1000 + 144 − 710×1.1', r.est, 1000 + 144 - Math.round(710 * 1.1));
-  eq('장부 대조 일치 → 경고 없음', r.warnings.filter((w) => w.includes('≠')).length, 0);
+  eq('af_qty 일치 → 경고 없음', r.warnings.filter((w) => w.includes('≠')).length, 0);
+  const r2 = m.computeItem({
+    item, anchor: { ...anchor, afQty: 6048 }, receipts: [], daysMap, anchorDayUsage: 0, today: '2026-09-19',
+    apiStock: { total: 500, available: 500, unavailable: 0 },
+    cfg: { avgWeeks: 4, leadTimeDays: 7, reviewDays: 7, safetyRate: 0.2 }, weekly: wk,
+  });
+  eq('출고 > 재고 → 0 바닥 + 대체 포장 추정', [r2.est, r2.usage.substituted, r2.rawEst], [0, Math.round(700 * 1.1) - 500, 500 - Math.round(700 * 1.1)]);
+  eq('af_qty 불일치 경고', r2.warnings.some((w) => w.includes('af_qty')), true);
+  eq('룩업 오버라이드 우선', m.classifyInvoice([{ code: 'G-O022', qty: 1 }], { ...lookup, overrides: { 'G-O022x1': 'b4' } }).box, 'b4');
   eq('주평균(보정)', r.weekAvg, Math.round(700 * 1.1));
 
   console.log(`\n통과 ${pass} / 실패 ${fail}`);
