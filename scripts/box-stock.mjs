@@ -262,6 +262,7 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
   return {
     key: item.key, label: item.label, name: item.name, companyCode: item.companyCode,
     productCode: item.productCode, bundle: item.bundle, factor: item.factor,
+    lossRate: (cfg.lossRateNote || {})[item.key] || 0,
     count: { date: anchor.date, dtm: anchor.dtm, qty: anchorQty, afQtyRaw: anchor.afQty, adjQty: anchor.adjQty, source: anchorSource },
     receipts: { qty: inQty, list: receipts },
     usage: { boxes, adjusted, since, unknownShare, substituted },
@@ -385,7 +386,7 @@ export async function main() {
   for (const d of dateList(fetchFrom, today)) {
     const cached = dailyStore.days[d];
     const isAnchorDay = Object.values(anchors).some((a) => a.date === d);
-    if (cached && d < refetchFrom && !isAnchorDay) continue;
+    if (cached && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
     const datas = await fetchPages('/api/wms/out/out_perf_period',
       { out_dt_type: '2', out_dt_from: d, out_dt_to: d }, 'datas', k, cfg, cfg.maxPagesPerDay);
     const rec = aggregateDay(d, datas, lookup);
@@ -428,6 +429,11 @@ export async function main() {
     items, coverage, weekly, daily: dailyOut, warnings,
   };
   writeFileSync(DAILY_PATH, JSON.stringify(dailyStore), 'utf8');
+  if (cfg.rebuildDailyOnce) {
+    // 1회 전체 재수집이 끝났으니 플래그를 내려 다음부터는 증분으로 돈다.
+    cfg.rebuildDailyOnce = false;
+    writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2) + '\n', 'utf8');
+  }
   writeFileSync(OUT_PATH, JSON.stringify(out, null, 1), 'utf8');
   console.log(`box-stock: ${items.map((i) => `${i.label}=${i.est}`).join(', ')} | API ${CALLS}회, 일별 ${fetchedDays}일 수집, ${out.elapsed_ms}ms`);
   for (const w of warnings) console.log('warn:', w);

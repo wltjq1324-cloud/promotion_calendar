@@ -1,15 +1,49 @@
 {
-  "note": "박스 실재고(근사치) 계산 설정. 실재고 = 마지막 실사 잔고 + 이후 입고 - 이후 출고 박스 × factor. factor는 수불표 실사 소모 ÷ WMS 송장 박스 수(2026-05~08 실측: 1호 1.10, 2호 1.14, 3호 1.00). B2B 벌크·파손분 보정.",
+  "note": "박스 실재고(근사치) 계산 설정. 실재고 = 마지막 실사 잔고 + 이후 입고 - 이후 출고 송장 수 × factor. factor 1.00 = 창고 담당자 계산 방식(2026-09-16 대조 확인: 1호 5,857 vs 5,864, 2호 2,228 vs 2,155). 과거 실사 조정에서 드러난 손실(1호 10%, 2호 14%)은 lossRateNote로 화면에 참고 표시만 하고 계산에는 넣지 않는다.",
   "items": [
-    { "key": "b1", "label": "1호", "companyCode": "S-TB001", "productCode": "202927000009", "name": "아이스박스 유통S", "bundle": 72, "factor": 1.10 },
-    { "key": "b2", "label": "2호", "companyCode": "S-TB002", "productCode": "202927000010", "name": "아이스박스 유통L", "bundle": 20, "factor": 1.14 },
-    { "key": "b3", "label": "3호", "companyCode": "S-TB008", "productCode": "202927000012", "name": "아이스박스 다용도L", "bundle": 10, "factor": 1.00 }
+    {
+      "key": "b1",
+      "label": "1호",
+      "companyCode": "S-TB001",
+      "productCode": "202927000009",
+      "name": "아이스박스 유통S",
+      "bundle": 72,
+      "factor": 1.0
+    },
+    {
+      "key": "b2",
+      "label": "2호",
+      "companyCode": "S-TB002",
+      "productCode": "202927000010",
+      "name": "아이스박스 유통L",
+      "bundle": 20,
+      "factor": 1.0
+    },
+    {
+      "key": "b3",
+      "label": "3호",
+      "companyCode": "S-TB008",
+      "productCode": "202927000012",
+      "name": "아이스박스 다용도L",
+      "bundle": 10,
+      "factor": 1.0
+    }
   ],
   "usageOnly": [
-    { "key": "b4", "label": "4호(아워박스 3호)", "note": "아워박스 소유 박스. 밭 재고 아님, 사용량만 집계" }
+    {
+      "key": "b4",
+      "label": "4호(아워박스 3호)",
+      "note": "아워박스 소유 박스. 밭 재고 아님, 사용량만 집계"
+    }
   ],
-  "lookupOverrides": {},
-  "lookupOverridesNote": "송장 서명(예: \"G-O142x1\") → 박스 키(b1/b2/b3/b4) 강제 지정. 룩업이 현재 포장 관행과 다를 때만 사용.",
+  "lookupOverrides": {
+    "G-O142x1": "b4",
+    "G-O142x2": "b4",
+    "G-O142x3": "b4",
+    "G-O094x2|G-O142x1": "b4",
+    "G-O083x1|G-O142x1": "b4"
+  },
+  "lookupOverridesNote": "송장 서명 → 박스 키 강제 지정. 8개입(G-O142) 조합은 2026-09-03부터 3호→4호로 포장 전환(OMS 엑셀·창고 계산으로 확인).",
   "leadTimeDays": 7,
   "reviewDays": 7,
   "safetyRate": 0.2,
@@ -22,5 +56,12 @@
   "outputDailyDays": 42,
   "outputWeeks": 8,
   "requestSleepMs": 200,
-  "maxPagesPerDay": 60
+  "maxPagesPerDay": 60,
+  "lossRateNote": {
+    "b1": 0.1,
+    "b2": 0.14,
+    "b3": 0.0
+  },
+  "rebuildDailyOnce": true,
+  "rebuildDailyOnceNote": "true면 다음 실행에서 일별 캐시를 무시하고 전부 다시 받은 뒤 false로 되돌린다(룩업 변경 후 1회)."
 }
