@@ -103,6 +103,9 @@ const eq = (name, got, want) => {
   eq('출고 > 재고 → 0 바닥 + 대체 포장 추정', [r2.est, r2.usage.substituted, r2.rawEst], [0, Math.round(700 * 1.1) - 500, 500 - Math.round(700 * 1.1)]);
   eq('af_qty 불일치 경고', r2.warnings.some((w) => w.includes('af_qty')), true);
   eq('룩업 오버라이드 우선', m.classifyInvoice([{ code: 'G-O022', qty: 1 }], { ...lookup, overrides: { 'G-O022x1': 'b4' } }).box, 'b4');
+  const ovd = { ...lookup, overrides: { 'G-O022x1': { box: 'b4', from: '2026-09-03' } } };
+  eq('오버라이드 from 이전 → 룩업', m.classifyInvoice([{ code: 'G-O022', qty: 1 }], ovd, '2026-09-02').box, 'b1');
+  eq('오버라이드 from 이후 → 강제', m.classifyInvoice([{ code: 'G-O022', qty: 1 }], ovd, '2026-09-03').box, 'b4');
   eq('주평균(보정)', r.weekAvg, Math.round(700 * 1.1));
 
   console.log(`\n통과 ${pass} / 실패 ${fail}`);

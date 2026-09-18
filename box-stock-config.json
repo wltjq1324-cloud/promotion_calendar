@@ -37,13 +37,28 @@
     }
   ],
   "lookupOverrides": {
-    "G-O142x1": "b4",
-    "G-O142x2": "b4",
-    "G-O142x3": "b4",
-    "G-O094x2|G-O142x1": "b4",
-    "G-O083x1|G-O142x1": "b4"
+    "G-O142x1": {
+      "box": "b4",
+      "from": "2026-09-03"
+    },
+    "G-O142x2": {
+      "box": "b4",
+      "from": "2026-09-03"
+    },
+    "G-O142x3": {
+      "box": "b4",
+      "from": "2026-09-03"
+    },
+    "G-O094x2|G-O142x1": {
+      "box": "b4",
+      "from": "2026-09-03"
+    },
+    "G-O083x1|G-O142x1": {
+      "box": "b4",
+      "from": "2026-09-03"
+    }
   },
-  "lookupOverridesNote": "송장 서명 → 박스 키 강제 지정. 8개입(G-O142) 조합은 2026-09-03부터 3호→4호로 포장 전환(OMS 엑셀·창고 계산으로 확인).",
+  "lookupOverridesNote": "송장 서명 → 박스 키 강제 지정. 값은 'b4' 또는 {box, from}(from 이후 출고에만 적용). 8개입(G-O142) 조합은 2026-09-03부터 3호→4호 포장 전환(창고 계산 대조: 전체 기간 적용 시 3호 −199, 미적용 시 +508).",
   "leadTimeDays": 7,
   "reviewDays": 7,
   "safetyRate": 0.2,
@@ -62,6 +77,6 @@
     "b2": 0.14,
     "b3": 0
   },
-  "rebuildDailyOnce": false,
+  "rebuildDailyOnce": true,
   "rebuildDailyOnceNote": "true면 다음 실행에서 일별 캐시를 무시하고 전부 다시 받은 뒤 false로 되돌린다(룩업 변경 후 1회)."
 }

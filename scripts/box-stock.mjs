@@ -78,11 +78,16 @@ export function signatureOf(lines, codeKey = 'code') {
 }
 
 // 룩업 → 총수량 폴백 → unknown
-export function classifyInvoice(lines, lookup) {
+// 오버라이드 값은 'b4' 또는 { box:'b4', from:'YYYY-MM-DD' } (from 이후 출고에만 적용 — 포장 관행 전환일)
+export function classifyInvoice(lines, lookup, date = '') {
   const total = lines.reduce((s, l) => s + toInt(l.qty), 0);
   const sigC = signatureOf(lines, 'code');
   const ov = lookup.overrides && lookup.overrides[sigC];
-  if (ov) return { box: ov, method: 'lookup', sig: sigC, total };
+  if (ov) {
+    const box = typeof ov === 'string' ? ov : ov.box;
+    const from = typeof ov === 'string' ? '' : (ov.from || '');
+    if (box && (!from || !date || date >= from)) return { box, method: 'lookup', sig: sigC, total };
+  }
   const hitC = lookup.byCompany && lookup.byCompany[sigC];
   if (hitC) return { box: hitC[0], method: 'lookup', sig: sigC, total };
   const sigP = signatureOf(lines, 'productCode');
@@ -129,7 +134,7 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
       const last = lines.map((l) => l.dtm).filter(Boolean).sort().at(-1) || '';
       if (last && last <= afterDtm) continue;
     }
-    const c = classifyInvoice(lines, lookup);
+    const c = classifyInvoice(lines, lookup, date);
     day.invoices += 1;
     if (c.method === 'lookup') day.byLookup += 1;
     else if (c.method === 'qty') day.byQty += 1;
