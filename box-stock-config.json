@@ -77,6 +77,6 @@
     "b2": 0.14,
     "b3": 0
   },
-  "rebuildDailyOnce": true,
+  "rebuildDailyOnce": false,
   "rebuildDailyOnceNote": "true면 다음 실행에서 일별 캐시를 무시하고 전부 다시 받은 뒤 false로 되돌린다(룩업 변경 후 1회)."
 }
