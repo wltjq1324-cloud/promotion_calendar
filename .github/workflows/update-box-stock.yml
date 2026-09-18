@@ -1,0 +1,54 @@
+name: Update box stock (박스 실재고 근사치)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 매일 08:00 KST (= 23:00 UTC 전날). 아워박스 조회는 하루 1회 원칙.
+    - cron: '0 23 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: box-stock
+  cancel-in-progress: false
+
+jobs:
+  update-box-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run tests
+        run: node scripts/box-stock.test.js
+
+      - name: Compute box stock from OurBox API
+        env:
+          OURBOX_API_ACCESS_KEY: ${{ secrets.OURBOX_API_ACCESS_KEY }}
+          OURBOX_API_SECRET_KEY: ${{ secrets.OURBOX_API_SECRET_KEY }}
+        run: node scripts/box-stock.mjs
+
+      - name: Commit box stock snapshot
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add box-stock-latest.json box-daily.json
+          if git diff --cached --quiet; then
+            echo "No box stock changes."
+            exit 0
+          fi
+          git commit -m "chore: update box stock snapshot"
+          # inventory 워크플로가 30분마다 main에 커밋하므로 밀렸으면 rebase 후 재시도
+          for i in 1 2 3 4; do
+            if git push; then exit 0; fi
+            echo "push failed, rebasing (try $i)"
+            git pull --rebase origin main || exit 1
+          done
+          exit 1

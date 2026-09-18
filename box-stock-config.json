@@ -1,0 +1,24 @@
+{
+  "note": "박스 실재고(근사치) 계산 설정. 실재고 = 마지막 실사 잔고 + 이후 입고 - 이후 출고 박스 × factor. factor는 수불표 실사 소모 ÷ WMS 송장 박스 수(2026-05~08 실측: 1호 1.10, 2호 1.14, 3호 1.00). B2B 벌크·파손분 보정.",
+  "items": [
+    { "key": "b1", "label": "1호", "companyCode": "S-TB001", "productCode": "202927000009", "name": "아이스박스 유통S", "bundle": 72, "factor": 1.10 },
+    { "key": "b2", "label": "2호", "companyCode": "S-TB002", "productCode": "202927000010", "name": "아이스박스 유통L", "bundle": 20, "factor": 1.14 },
+    { "key": "b3", "label": "3호", "companyCode": "S-TB008", "productCode": "202927000012", "name": "아이스박스 다용도L", "bundle": 10, "factor": 1.00 }
+  ],
+  "usageOnly": [
+    { "key": "b4", "label": "4호(아워박스 3호)", "note": "아워박스 소유 박스. 밭 재고 아님, 사용량만 집계" }
+  ],
+  "leadTimeDays": 7,
+  "reviewDays": 7,
+  "safetyRate": 0.2,
+  "avgWeeks": 4,
+  "adjLookbackDays": 120,
+  "adjWindowDays": 30,
+  "putWindowDays": 7,
+  "refetchRecentDays": 2,
+  "dailyKeepDays": 120,
+  "outputDailyDays": 42,
+  "outputWeeks": 8,
+  "requestSleepMs": 200,
+  "maxPagesPerDay": 60
+}
