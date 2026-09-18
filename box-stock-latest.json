@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-09-18 10:19:31",
+ "generated_at": "2026-09-18 10:53:34",
  "source": "ourbox-openapi",
- "api_calls": 47,
- "fetched_days": 4,
- "elapsed_ms": 54680,
+ "api_calls": 215,
+ "fetched_days": 23,
+ "elapsed_ms": 259879,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -26,7 +26,8 @@
    "companyCode": "S-TB001",
    "productCode": "202927000009",
    "bundle": 72,
-   "factor": 1.1,
+   "factor": 1,
+   "lossRate": 0.1,
    "count": {
     "date": "2026-08-27",
     "dtm": "2026-08-27 10:47:11",
@@ -52,13 +53,13 @@
    },
    "usage": {
     "boxes": 6408,
-    "adjusted": 7049,
+    "adjusted": 6408,
     "since": "2026-08-27",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 853,
-   "rawEst": 853,
+   "est": 1494,
+   "rawEst": 1494,
    "apiStock": {
     "total": 7902,
     "available": 7902,
@@ -66,11 +67,11 @@
     "expected": 7902,
     "diff": 0
    },
-   "weekAvg": 2440,
+   "weekAvg": 2218,
    "weekMax8": 2304,
-   "target": 5856,
-   "orderQty": 5040,
-   "daysCover": 2.4,
+   "target": 5323,
+   "orderQty": 3888,
+   "daysCover": 4.7,
    "warnings": [
     "조정 이력 af_qty 합 6,048 ≠ 장부 역산 4,662 — 장부 역산 값을 사용"
    ]
@@ -82,7 +83,8 @@
    "companyCode": "S-TB002",
    "productCode": "202927000010",
    "bundle": 20,
-   "factor": 1.14,
+   "factor": 1,
+   "lossRate": 0.14,
    "count": {
     "date": "2026-08-27",
     "dtm": "2026-08-27 10:47:57",
@@ -108,13 +110,13 @@
    },
    "usage": {
     "boxes": 2381,
-    "adjusted": 2714,
+    "adjusted": 2381,
     "since": "2026-08-27",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 2832,
-   "rawEst": 2832,
+   "est": 3165,
+   "rawEst": 3165,
    "apiStock": {
     "total": 5546,
     "available": 5546,
@@ -122,11 +124,11 @@
     "expected": 5546,
     "diff": 0
    },
-   "weekAvg": 852,
+   "weekAvg": 747,
    "weekMax8": 754,
-   "target": 2045,
+   "target": 1793,
    "orderQty": 0,
-   "daysCover": 23.3,
+   "daysCover": 29.7,
    "warnings": [
     "조정 이력 af_qty 합 5,100 ≠ 장부 역산 3,546 — 장부 역산 값을 사용"
    ]
@@ -139,6 +141,7 @@
    "productCode": "202927000012",
    "bundle": 10,
    "factor": 1,
+   "lossRate": 0,
    "count": {
     "date": "2026-08-27",
     "dtm": "2026-08-27 10:50:52",
@@ -163,14 +166,14 @@
     ]
    },
    "usage": {
-    "boxes": 1067,
-    "adjusted": 1067,
+    "boxes": 333,
+    "adjusted": 333,
     "since": "2026-08-27",
     "unknownShare": 0,
-    "substituted": 483
+    "substituted": 0
    },
-   "est": 0,
-   "rawEst": -483,
+   "est": 251,
+   "rawEst": 251,
    "apiStock": {
     "total": 584,
     "available": 584,
@@ -178,14 +181,13 @@
     "expected": 584,
     "diff": 0
    },
-   "weekAvg": 382,
-   "weekMax8": 477,
-   "target": 917,
-   "orderQty": 920,
-   "daysCover": 0,
+   "weekAvg": 104,
+   "weekMax8": 125,
+   "target": 250,
+   "orderQty": 0,
+   "daysCover": 16.9,
    "warnings": [
-    "조정 이력 af_qty 합 1,302 ≠ 장부 역산 434 — 장부 역산 값을 사용",
-    "출고 박스가 재고를 483 초과 — 다른 호수로 대체 포장한 것으로 추정. 실물 확인 필요"
+    "조정 이력 af_qty 합 1,302 ≠ 장부 역산 434 — 장부 역산 값을 사용"
    ]
   }
  ],
@@ -268,8 +270,8 @@
    "unknown": 0,
    "b1": 416,
    "b2": 211,
-   "b3": 70,
-   "b4": 104,
+   "b3": 22,
+   "b4": 152,
    "gift": 2,
    "paper": 0,
    "plain": 0,
@@ -284,8 +286,8 @@
    "unknown": 0,
    "b1": 2304,
    "b2": 754,
-   "b3": 477,
-   "b4": 318,
+   "b3": 82,
+   "b4": 713,
    "gift": 3,
    "paper": 0,
    "plain": 0,
@@ -300,8 +302,8 @@
    "unknown": 0,
    "b1": 2132,
    "b2": 740,
-   "b3": 287,
-   "b4": 347,
+   "b3": 125,
+   "b4": 509,
    "gift": 29,
    "paper": 0,
    "plain": 0,
@@ -316,8 +318,8 @@
    "unknown": 0,
    "b1": 1718,
    "b2": 775,
-   "b3": 250,
-   "b4": 389,
+   "b3": 110,
+   "b4": 529,
    "gift": 34,
    "paper": 0,
    "plain": 0,
@@ -699,13 +701,13 @@
    "unknownSigs": [],
    "b1": 162,
    "b2": 99,
-   "b3": 17,
-   "b4": 30,
+   "b3": 6,
+   "b4": 41,
    "gift": 2,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:19:31"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-08-28",
@@ -719,13 +721,13 @@
    "unknownSigs": [],
    "b1": 162,
    "b2": 75,
-   "b3": 20,
-   "b4": 42,
+   "b3": 10,
+   "b4": 52,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-08-29",
@@ -739,13 +741,13 @@
    "unknownSigs": [],
    "b1": 92,
    "b2": 37,
-   "b3": 33,
-   "b4": 32,
+   "b3": 6,
+   "b4": 59,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-08-30",
@@ -759,13 +761,13 @@
    "unknownSigs": [],
    "b1": 46,
    "b2": 20,
-   "b3": 21,
-   "b4": 13,
+   "b3": 0,
+   "b4": 34,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-08-31",
@@ -785,7 +787,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-01",
@@ -799,13 +801,13 @@
    "unknownSigs": [],
    "b1": 161,
    "b2": 158,
-   "b3": 141,
-   "b4": 61,
+   "b3": 21,
+   "b4": 181,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-02",
@@ -819,13 +821,13 @@
    "unknownSigs": [],
    "b1": 136,
    "b2": 75,
-   "b3": 71,
-   "b4": 27,
+   "b3": 8,
+   "b4": 90,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-03",
@@ -839,13 +841,13 @@
    "unknownSigs": [],
    "b1": 122,
    "b2": 76,
-   "b3": 49,
-   "b4": 36,
+   "b3": 22,
+   "b4": 63,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-04",
@@ -859,13 +861,13 @@
    "unknownSigs": [],
    "b1": 566,
    "b2": 84,
-   "b3": 36,
-   "b4": 39,
+   "b3": 12,
+   "b4": 63,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-05",
@@ -879,13 +881,13 @@
    "unknownSigs": [],
    "b1": 123,
    "b2": 36,
-   "b3": 145,
-   "b4": 26,
+   "b3": 5,
+   "b4": 166,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-06",
@@ -899,13 +901,13 @@
    "unknownSigs": [],
    "b1": 113,
    "b2": 39,
-   "b3": 31,
-   "b4": 16,
+   "b3": 1,
+   "b4": 46,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-07",
@@ -925,7 +927,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-08",
@@ -939,13 +941,13 @@
    "unknownSigs": [],
    "b1": 199,
    "b2": 102,
-   "b3": 46,
-   "b4": 51,
+   "b3": 17,
+   "b4": 80,
    "gift": 14,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-09",
@@ -959,13 +961,13 @@
    "unknownSigs": [],
    "b1": 168,
    "b2": 93,
-   "b3": 36,
-   "b4": 48,
+   "b3": 16,
+   "b4": 68,
    "gift": 7,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-10",
@@ -979,13 +981,13 @@
    "unknownSigs": [],
    "b1": 433,
    "b2": 106,
-   "b3": 43,
-   "b4": 48,
+   "b3": 19,
+   "b4": 72,
    "gift": 4,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-11",
@@ -999,13 +1001,13 @@
    "unknownSigs": [],
    "b1": 595,
    "b2": 182,
-   "b3": 58,
-   "b4": 111,
+   "b3": 41,
+   "b4": 128,
    "gift": 4,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-12",
@@ -1019,13 +1021,13 @@
    "unknownSigs": [],
    "b1": 72,
    "b2": 29,
-   "b3": 45,
-   "b4": 17,
+   "b3": 3,
+   "b4": 59,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-13",
@@ -1039,13 +1041,13 @@
    "unknownSigs": [],
    "b1": 93,
    "b2": 112,
-   "b3": 21,
-   "b4": 20,
+   "b3": 3,
+   "b4": 38,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-14",
@@ -1065,7 +1067,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-15",
@@ -1079,13 +1081,13 @@
    "unknownSigs": [],
    "b1": 198,
    "b2": 91,
-   "b3": 59,
-   "b4": 102,
+   "b3": 18,
+   "b4": 143,
    "gift": 9,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:11:20"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-16",
@@ -1099,13 +1101,13 @@
    "unknownSigs": [],
    "b1": 224,
    "b2": 120,
-   "b3": 78,
-   "b4": 72,
+   "b3": 35,
+   "b4": 115,
    "gift": 1,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:19:31"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-17",
@@ -1119,13 +1121,13 @@
    "unknownSigs": [],
    "b1": 128,
    "b2": 78,
-   "b3": 21,
-   "b4": 29,
+   "b3": 14,
+   "b4": 36,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:19:31"
+   "fetchedAt": "2026-09-18 10:53:34"
   },
   {
    "date": "2026-09-18",
@@ -1139,13 +1141,13 @@
    "unknownSigs": [],
    "b1": 585,
    "b2": 174,
-   "b3": 41,
-   "b4": 56,
+   "b3": 10,
+   "b4": 87,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-18 10:19:31"
+   "fetchedAt": "2026-09-18 10:53:34"
   }
  ],
  "warnings": []
