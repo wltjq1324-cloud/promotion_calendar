@@ -5,6 +5,12 @@ on:
   schedule:
     # 매일 08:00 KST (= 23:00 UTC 전날). 아워박스 조회는 하루 1회 원칙.
     - cron: '0 23 * * *'
+  push:
+    paths:
+      - '.github/workflows/update-box-stock.yml'
+      - 'scripts/box-stock.mjs'
+      - 'box-stock-config.json'
+      - 'box-lookup.json'
 
 permissions:
   contents: write
