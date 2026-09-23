@@ -7,7 +7,7 @@
 //   를 계산해 box-stock-latest.json 으로 남기고 /inven 페이지가 읽는다.
 //
 // 아워박스 API 사용 (모두 POST, 헤더 api_access_key / api_secret_key)
-//   /api/wms/stock/stock_adj_hist   재고 조정 이력 → 품목별 최신 실사(af_qty, reg_dtm)
+//   /api/wms/stock/stock_adj_hist   재고 조정 이력 → 품목별 최신 조정(reg_dtm, 사유). 실사인지 수기 보정인지 API는 구분 못 함
 //   /api/wms/put/put_perf           입고실적(입고완료일, 7일 창) → 실사 이후 입고
 //   /api/oms/info/product_stock     재고 조회 → 장부재고 대조(기대값 = 실사잔고 + 입고)
 //   /api/wms/out/out_perf_period    출고실적(출고완료일, 일별) → 송장 1건 = 박스 1개
@@ -188,6 +188,19 @@ export function receiptsSince(rows, item, afterDtm) {
   return list;
 }
 
+// 입고실적 → 품목별 일별 입고 합 {date: qty} (창 안 전부, 앵커와 무관 — 타임라인 표시용)
+export function receiptsDailyMap(rows, item, from, to) {
+  const codes = new Set([item.companyCode, item.productCode].filter(Boolean).map(text));
+  const out = {};
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (!codes.has(text(r.product_company_code)) && !codes.has(text(r.product_code))) continue;
+    const d = text(r.input_complete_dt || r.input_dt).slice(0, 10);
+    if (!d || d < from || d > to) continue;
+    out[d] = (out[d] || 0) + toInt(r.input_qty);
+  }
+  return out;
+}
+
 // 일별 → 일~토 주간 (endDate 포함 최근 weeks 주, 부분 주 표시)
 export function weeklyFromDaily(daysMap, endDate, weeks) {
   const out = [];
@@ -268,7 +281,7 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
     key: item.key, label: item.label, name: item.name, companyCode: item.companyCode,
     productCode: item.productCode, bundle: item.bundle, factor: item.factor,
     lossRate: (cfg.lossRateNote || {})[item.key] || 0,
-    count: { date: anchor.date, dtm: anchor.dtm, qty: anchorQty, afQtyRaw: anchor.afQty, adjQty: anchor.adjQty, source: anchorSource },
+    count: { date: anchor.date, dtm: anchor.dtm, qty: anchorQty, afQtyRaw: anchor.afQty, adjQty: anchor.adjQty, reason: anchor.reason || '', source: anchorSource },
     receipts: { qty: inQty, list: receipts },
     usage: { boxes, adjusted, since, unknownShare, substituted },
     est, rawEst, apiStock: apiStock ? { ...apiStock, expected, diff: apiStock.total - expected } : null,
@@ -371,10 +384,12 @@ export async function main() {
   }
   const earliest = Object.values(anchors).map((a) => a.date).sort()[0] || today;
 
-  // 3) 입고실적 (입고완료일, 7일 창) — 가장 이른 실사일부터
+  // 3) 입고실적 (입고완료일, 7일 창) — 기준 조정일과 타임라인 창(outputDailyDays) 중 이른 날부터
+  const windowFrom = addDays(today, -(cfg.outputDailyDays - 1));
   let putRows = [];
   for (const it of cfg.items) {
-    for (let s = addDays(anchors[it.key].date, 0); s <= today; s = addDays(s, cfg.putWindowDays)) {
+    const from = anchors[it.key].date < windowFrom ? anchors[it.key].date : windowFrom;
+    for (let s = from; s <= today; s = addDays(s, cfg.putWindowDays)) {
       const e = addDays(s, cfg.putWindowDays - 1) > today ? today : addDays(s, cfg.putWindowDays - 1);
       putRows = putRows.concat(await fetchPages('/api/wms/put/put_perf',
         { input_dt_type: '3', input_dt_from: s, input_dt_to: e, product_code_type: '2', product_code: it.companyCode },
@@ -411,10 +426,12 @@ export async function main() {
     const anchorDay = rawByDate[a.date]
       ? aggregateDay(a.date, rawByDate[a.date], lookup, a.dtm)[it.key] || 0
       : 0;
-    return computeItem({
+    const r = computeItem({
       item: it, anchor: a, receipts: receiptsSince(putRows, it, a.dtm), daysMap: dailyStore.days,
       anchorDayUsage: anchorDay, today, apiStock: apiStock[it.key] || null, cfg, weekly,
     });
+    r.receiptsDaily = receiptsDailyMap(putRows, it, windowFrom, today);
+    return r;
   });
   const dailyOut = dateList(addDays(today, -(cfg.outputDailyDays - 1)), today)
     .map((d) => dailyStore.days[d] || emptyDay(d));

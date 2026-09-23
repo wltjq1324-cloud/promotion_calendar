@@ -42,6 +42,23 @@
     .boxcard .order{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:12px;font-weight:900}.boxcard .order b{color:var(--brand)}
     .boxcard .warnlist{margin:8px 0 0;padding-left:16px;font-size:11px;color:var(--red);font-weight:700;line-height:1.4}
     .boxes-note{margin:10px 0 0;font-size:11px;color:var(--muted);font-weight:700;line-height:1.5}
+    .boxes-timeline{margin-top:12px;overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+    .tl{border-collapse:separate;border-spacing:0;font-size:11px;min-width:100%}
+    .tl th,.tl td{padding:4px 5px;border-bottom:1px solid var(--line);border-right:1px solid #eef1f5;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:44px}
+    .tl th{position:sticky;top:0;background:#eef6f8;color:var(--brand-dark);font-weight:900;cursor:default;text-align:center;line-height:1.2}
+    .tl th.wk{background:#e3eef2;font-size:10px}
+    .tl th.lab,.tl td.lab{position:sticky;left:0;z-index:2;background:#fff;text-align:left;font-weight:900;color:var(--ink);min-width:110px;border-right:2px solid var(--line)}
+    .tl th.lab{background:#eef6f8;z-index:3}
+    .tl tr.grp td.lab{color:var(--brand-dark)}
+    .tl tr.grp td{border-top:2px solid var(--line)}
+    .tl td.z{color:#c4c9d1}
+    .tl td.in{background:#eaf7ee;color:var(--green);font-weight:900}
+    .tl td.stk{font-weight:900}.tl td.stk.low{color:var(--orange)}.tl td.stk.out{color:var(--red);background:#fff1f0}
+    .tl td.adj{background:#eef2f7;color:var(--brand-dark);font-weight:900}
+    .tl td.today,.tl th.today{background:#fff8dc}
+    .tl td.fut{color:var(--muted);font-style:italic;background:#fbfbfc}.tl td.fut.stk{font-weight:800}
+    .tl td.spike{color:var(--red)}
+    .tl-note{padding:6px 8px;font-size:11px;color:var(--muted);font-weight:700;border-top:1px solid var(--line);background:#fafbfc}
     .boxes-usage{margin-top:10px;overflow:auto}.boxes-usage table{font-size:11px}.boxes-usage th{cursor:default;position:static}
     .boxes-usage tr.wkrow{cursor:pointer}.boxes-usage tr.wkrow:hover td{background:var(--soft)}
     .wkchev{display:inline-block;width:14px;color:var(--brand-dark);transition:transform .15s}.boxes-usage tr.wkrow[aria-expanded="true"] .wkchev{transform:rotate(90deg)}
@@ -111,6 +128,7 @@
     </button>
     <div id="boxBody">
       <div class="boxgrid" id="boxGrid"></div>
+      <div class="boxes-timeline" id="boxTimeline"></div>
       <div class="boxes-usage" id="boxUsage"></div>
       <p class="boxes-note" id="boxNote"></p>
     </div>
@@ -216,6 +234,35 @@ function boxCollapsed(){try{return localStorage.getItem(BOX_COLLAPSED_KEY)==='1'
 function applyBoxCollapsed(){const on=boxCollapsed();$('boxStock').classList.toggle('collapsed',on);$('boxToggle').setAttribute('aria-expanded',on?'false':'true')}
 function toggleBoxStock(){try{localStorage.setItem(BOX_COLLAPSED_KEY,boxCollapsed()?'0':'1')}catch(e){}applyBoxCollapsed()}
 function boxBadge(it,cfg){if(it.est<=0)return {cls:'bad',text:'결품 위험'};const lt=(cfg.leadTimeDays||7)+(cfg.reviewDays||7);if(it.daysCover!=null&&it.daysCover<lt)return {cls:'warn',text:`${lt}일치 미만`};return {cls:'',text:'안정'}}
+// 4주 타임라인(3주 전 일요일 ~ 이번 주 토요일): 박스별 입고 / 출고 / 재고(추정). 오늘 이후는 최근 4주 일평균으로 예상.
+function renderBoxTimeline(d){const host=$('boxTimeline');host.innerHTML='';if(!d||d.status!=='ok'||!Array.isArray(d.items))return;
+  const DOW=['일','월','화','수','목','금','토'],cfg=d.config||{};
+  const today=(d.generated_at||'').slice(0,10);if(!today)return;
+  const tD=parseKey(today),ws=new Date(tD);ws.setDate(ws.getDate()-ws.getDay()-21);const days=[];for(let i=0;i<28;i++){const x=new Date(ws);x.setDate(x.getDate()+i);days.push(toKey(x))}
+  const dailyMap=new Map((d.daily||[]).map(x=>[x.date,x]));
+  const rows=[...d.items.map(it=>({...it,stock:true})),...(d.usageOnly||[]).map(u=>({key:u.key,label:u.label,stock:false}))];
+  const maxOut=Math.max(1,...days.map(x=>{const r=dailyMap.get(x);return r?Math.max(...rows.map(it=>r[it.key]||0)):0}));
+  // 주 헤더(일~토 묶음)
+  let h='<table class="tl"><thead><tr><th class="lab">4주 타임라인</th>';
+  for(let w=0;w<4;w++){const a=days[w*7],b=days[w*7+6];h+=`<th class="wk" colspan="7">${a.slice(5).replace('-','/')} ~ ${b.slice(5).replace('-','/')}${b>=today&&a<=today?' (금주)':''}</th>`}
+  h+='</tr><tr><th class="lab">날짜</th>'+days.map(x=>`<th class="${x===today?'today':''}">${x.slice(8)}<br><small>${DOW[parseKey(x).getDay()]}</small></th>`).join('')+'</tr></thead><tbody>';
+  rows.forEach(it=>{
+    const outs=days.map(x=>{const r=dailyMap.get(x);return r?(r[it.key]||0):0});
+    const ins=days.map(x=>it.receiptsDaily?(it.receiptsDaily[x]||0):((it.receipts&&it.receipts.list)||[]).filter(r=>r.date===x).reduce((s,r)=>s+r.qty,0));
+    const avgDay=it.weekAvg?it.weekAvg/7:0;
+    // 재고: 오늘 = est, 과거는 역산, 미래는 예상
+    const stk=new Array(28).fill(null);
+    if(it.stock){const ti=days.indexOf(today);if(ti>=0){stk[ti]=it.est;for(let i=ti-1;i>=0;i--){stk[i]=stk[i+1]+outs[i+1]-ins[i+1]}for(let i=ti+1;i<28;i++){stk[i]=Math.max(0,Math.round(stk[i-1]-avgDay+ins[i]))}
+      // 조정일 이전은 근거가 없다(조정으로 잔고가 점프) → 비운다
+      const ai=days.indexOf(it.count&&it.count.date);if(ai>=0)for(let i=0;i<ai;i++)stk[i]=null}}
+    const lowAt=(cfg.leadTimeDays||7)*avgDay;
+    h+=`<tr class="grp"><td class="lab">${it.label}${it.stock?'':' <span class="muted">(사용량만)</span>'} · 입고</td>`+days.map((x,i)=>{const v=it.stock?ins[i]:0;const c=(x===today?'today ':'')+(x>today?'fut ':'')+(v?'in':'z');return `<td class="${c}">${v?num(v):(it.stock?'·':'')}</td>`}).join('')+'</tr>';
+    const wkavg=days.map((x,i)=>{const w=Math.floor(i/7);const seg=outs.slice(w*7,w*7+7).filter((_,j)=>days[w*7+j]<=today);return seg.length?seg.reduce((a,b)=>a+b,0)/seg.length:0});
+    h+=`<tr><td class="lab">${it.label} · 출고</td>`+days.map((x,i)=>{const v=outs[i];const spike=v&&wkavg[i]>0&&v>=wkavg[i]*2;const c=(x===today?'today ':'')+(x>today?'fut ':'')+(v?'':'z')+(spike?' spike':'');const bg=v&&x<=today?`style="background:rgba(23,107,135,${(0.06+0.34*v/maxOut).toFixed(2)})"`:'';return `<td class="${c}" ${bg}>${x>today?'':(v?num(v):'0')}</td>`}).join('')+'</tr>';
+    if(it.stock)h+=`<tr><td class="lab">${it.label} · 재고</td>`+days.map((x,i)=>{const v=stk[i];if(v==null)return `<td class="z ${x===today?'today':''}">–</td>`;const isAdj=it.count&&x===it.count.date;const c=(x===today?'today ':'')+(x>today?'fut ':'')+'stk'+(v<=0?' out':v<lowAt?' low':'')+(isAdj?' adj':'');return `<td class="${c}" title="${isAdj?'재고 조정 후 잔고 '+num(it.count.qty)+(it.count.reason?' · '+it.count.reason:''):(x>today?'예상(일평균 '+Math.round(avgDay)+' 기준)':'')}">${num(v)}${isAdj?'<small> 조정</small>':''}</td>`}).join('')+'</tr>';
+  });
+  h+='</tbody></table><div class="tl-note">입고 = 아워박스 입고실적(입고완료일). 출고 = 송장 수(파랑 농도 = 양, 빨강 = 그 주 일평균 2배 이상 스파이크). 재고 = 오늘 실재고 추정에서 역산, 오늘 이후(기울임)는 최근 4주 일평균으로 예상. "조정" = 아워박스 재고 조정 시점(그 이전 재고는 근거 없음). 노랑 = 오늘.</div>';
+  host.innerHTML=h}
 function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.style.display='none';return}box.style.display='';applyBoxCollapsed();const grid=$('boxGrid'),meta=$('boxStockMeta'),note=$('boxNote'),usage=$('boxUsage'),mini=$('boxMini');grid.innerHTML='';usage.innerHTML='';mini.textContent='';
   if(d.status!=='ok'||!Array.isArray(d.items)){meta.textContent=d.status==='pending'?'첫 수집 대기':'로드 실패';mini.textContent=meta.textContent;note.textContent=d.message||(d.last_error&&d.last_error.message)||'';return}
   const cfg=d.config||{},cov=d.coverage||{};
@@ -224,9 +271,10 @@ function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.st
   d.items.forEach(it=>{const b=boxBadge(it,cfg),card=document.createElement('div');card.className='boxcard '+b.cls;
     card.innerHTML=`<div class="t"><span>${it.label} <small>${it.name} · ${it.companyCode}</small></span><span class="badge ${b.cls==='bad'?'bad':b.cls==='warn'?'warn':'good'}">${b.text}</span></div>
       <div class="big">${num(it.est)}</div><div class="sub">실재고 추정 · ${it.daysCover==null?'-':it.daysCover+'일치'} (주 ${num(it.weekAvg)} 사용 기준)</div>
-      <dl><dt>실사 잔고 (${it.count.date})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd><dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>API 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
-      <div class="order">발주 제안 <b>${num(it.orderQty)}</b> <span class="muted">(목표 ${num(it.target)} · 묶음 ${it.bundle})</span></div>${it.lossRate?`<div class="sub" style="margin-top:6px">과거 실사 손실률 ${Math.round(it.lossRate*100)}% 미반영 (실사 때만 확인됨)</div>`:''}
+      <dl><dt>재고 조정 후 잔고 (${it.count.date.slice(5)}${it.count.reason?` · ${it.count.reason}`:''})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd><dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>API 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
+      <div class="order">발주 제안 <b>${num(it.orderQty)}</b> <span class="muted">(목표 ${num(it.target)} · 묶음 ${it.bundle})</span></div>${it.lossRate?`<div class="sub" style="margin-top:6px">과거 재고 조정에서 드러난 손실률 ${Math.round(it.lossRate*100)}% 미반영</div>`:''}
       ${(it.warnings||[]).filter(w=>!w.includes('af_qty')).length?`<ul class="warnlist">${it.warnings.filter(w=>!w.includes('af_qty')).map(w=>`<li>${w}</li>`).join('')}</ul>`:''}`;grid.appendChild(card)});
+  renderBoxTimeline(d);
   const wk=(d.weekly||[]).filter(w=>w.invoices>0).slice(-6),dailyMap=new Map((d.daily||[]).map(x=>[x.date,x])),DOW=['일','월','화','수','목','금','토'];
   if(wk.length){usage.innerHTML=`<table><thead><tr><th>주간 출고 박스 (일~토) <small class="muted" style="font-weight:700">· 행을 누르면 일자별</small></th><th class="num">1호</th><th class="num">2호</th><th class="num">3호</th><th class="num">4호</th><th class="num">미판정</th><th class="num">송장 합계</th></tr></thead><tbody>${wk.map((w,i)=>{
       const days=[];for(let t=parseKey(w.weekStart);toKey(t)<=w.weekEnd;t.setDate(t.getDate()+1)){const r=dailyMap.get(toKey(t));if(r&&r.invoices)days.push(r)}
@@ -235,7 +283,7 @@ function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.st
       const body=days.map(r=>{const spike=avg>0&&r.invoices>=avg*2;return `<tr class="dayrow ${spike?'spike':''}" data-wk="${i}" hidden><td class="muted">&nbsp;&nbsp;&nbsp;${r.date.slice(5)} (${DOW[parseKey(r.date).getDay()]})${spike?' <span class="badge bad">스파이크</span>':''}</td><td class="num">${num(r.b1)}</td><td class="num">${num(r.b2)}</td><td class="num">${num(r.b3)}</td><td class="num">${num(r.b4)}</td><td class="num">${num(r.unknown)}</td><td class="num">${num(r.invoices)}</td></tr>`}).join('');
       return head+body}).join('')}</tbody></table>`;
     usage.querySelectorAll('tr.wkrow').forEach(tr=>{tr.onclick=()=>{const on=tr.getAttribute('aria-expanded')!=='true';tr.setAttribute('aria-expanded',on?'true':'false');usage.querySelectorAll(`tr.dayrow[data-wk="${tr.dataset.wk}"]`).forEach(r=>r.hidden=!on)}})}
-  note.textContent=`실재고 = 마지막 실사 잔고 + 이후 입고 − 이후 출고 송장 수(송장 1건 = 박스 1개, 창고 계산 방식과 동일). 박스 종류는 송장 내용물로 추정합니다(아워박스 공개 API에 포장박스 열이 없음). 발주 목표 = 주 사용량 × ${(cfg.leadTimeDays||7)+(cfg.reviewDays||7)}일 × (1+${cfg.safetyRate??0.2}), 묶음 단위 올림. 4호는 아워박스 소유 박스라 사용량만 집계.`+(d.warnings&&d.warnings.length?' 경고: '+d.warnings.join(' / '):'')}
+  note.textContent=`실재고 = 마지막 재고 조정 후 잔고 + 이후 입고 − 이후 출고 송장 수(송장 1건 = 박스 1개). 재고 조정은 아워박스 조정 이력(API)에서 가져오며 실물 실사인지 수기 보정인지는 API가 구분하지 않습니다. 박스 종류는 송장 내용물로 추정합니다(아워박스 공개 API에 포장박스 열이 없음). 발주 목표 = 주 사용량 × ${(cfg.leadTimeDays||7)+(cfg.reviewDays||7)}일 × (1+${cfg.safetyRate??0.2}), 묶음 단위 올림. 4호는 아워박스 소유 박스라 사용량만 집계.`+(d.warnings&&d.warnings.length?' 경고: '+d.warnings.join(' / '):'')}
 async function loadInventory(){const data=await fetchJson('재고 파일',`${INVENTORY_URL}?t=${Date.now()}`);state.inventory=(Array.isArray(data.items)?data.items:[]).map(row=>({center:row.center||row.plant_name||'',product_code:row.product_code||row.sales_product_code||'',company_code:row.company_code||row.sales_product_company_code||'',product_name:row.product_name||'',barcode:row.barcode||'',expiration_date:row.expiration_date||'',lot_no:row.lot_no||'',stock_status:row.stock_status_name||row.stock_status||'',total_stock:Number(row.total_stock??row.stock_qty??0),available_stock:Number(row.available_stock??0),allocated_stock:Number(row.allocated_stock??row.unavailable_stock??0),category:inventoryCategory(row),updated_at:row.updated_at||data.generated_at||''}));state.inventoryUpdatedAt=data.response_date||data.generated_at||''}
 async function loadPromotions(){let data;try{data=await fetchJson('프로모션 목록',`${API}?action=load&role=edit&t=${Date.now()}`)}catch(err){console.warn('프로모션 목록을 불러오지 못해 건너뜁니다:',err.message);state.promotions=[];state.promotionLoadError=err.message;return}if(data.error)throw new Error(data.error);state.promotions=data.promotions||[];if(ROLE==='external')state.promotions=state.promotions.filter(p=>!EXTERNAL_HIDDEN_OWNERS.includes(String(p.owner||'').trim()))}
 function currentPromoCodes(){const y=new Date().getFullYear(),m=new Date().getMonth(),first=toKey(new Date(y,m,1)),last=toKey(new Date(y,m+1,0)),codes=new Set();state.promotions.filter(p=>p.end_date>=first&&p.start_date<=last).forEach(p=>parseSku(p.product_name).forEach(row=>(row.items||[]).forEach(name=>findSkuMappings(name).forEach(m=>codes.add(m.inventory_product_code)))));return codes}

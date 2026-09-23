@@ -66,6 +66,7 @@ const eq = (name, got, want) => {
   ];
   const rc = m.receiptsSince(put, items[0], '2026-08-27 14:10:00');
   eq('실사 이후 입고만', rc.map((r) => r.qty), [1512]);
+  eq('일별 입고 맵(창 안 전부)', m.receiptsDailyMap(put, items[0], '2026-08-01', '2026-09-30'), { '2026-09-20': 1512, '2026-08-27': 72 });
 
   console.log('\n[주간·발주]');
   const daysMap = {};
