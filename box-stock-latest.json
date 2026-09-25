@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-09-24 10:15:20",
+ "generated_at": "2026-09-25 10:17:54",
  "source": "ourbox-openapi",
- "api_calls": 50,
+ "api_calls": 42,
  "fetched_days": 4,
- "elapsed_ms": 46756,
+ "elapsed_ms": 40149,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -91,7 +91,7 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 1446,
+    "afQtyRaw": 0,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
@@ -128,7 +128,7 @@
    "orderQty": 0,
    "daysCover": 27.4,
    "warnings": [
-    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-08-20": 1000,
@@ -321,7 +321,7 @@
   {
    "weekStart": "2026-09-20",
    "weekEnd": "2026-09-26",
-   "days": 5,
+   "days": 6,
    "invoices": 1203,
    "unknown": 0,
    "b1": 502,
@@ -336,25 +336,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-14",
-   "invoices": 0,
-   "lines": 0,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
-   "unknown": 0,
-   "byLookup": 0,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b1": 0,
-   "b2": 0,
-   "b3": 0,
-   "b4": 0,
-   "gift": 0,
-   "paper": 0,
-   "plain": 0,
-   "other": 0
-  },
   {
    "date": "2026-08-15",
    "invoices": 0,
@@ -1041,7 +1022,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-24 10:15:20"
+   "fetchedAt": "2026-09-25 10:17:54"
   },
   {
    "date": "2026-09-19",
@@ -1141,7 +1122,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-24 10:15:20"
+   "fetchedAt": "2026-09-25 10:17:54"
   },
   {
    "date": "2026-09-24",
@@ -1161,7 +1142,27 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-24 10:15:20"
+   "fetchedAt": "2026-09-25 10:17:54"
+  },
+  {
+   "date": "2026-09-25",
+   "invoices": 0,
+   "lines": 0,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 0,
+   "byQty": 0,
+   "unknownSigs": [],
+   "b1": 0,
+   "b2": 0,
+   "b3": 0,
+   "b4": 0,
+   "gift": 0,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-09-25 10:17:54"
   }
  ],
  "warnings": []
