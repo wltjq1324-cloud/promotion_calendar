@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-09-25 10:17:54",
+ "generated_at": "2026-09-26 10:20:13",
  "source": "ourbox-openapi",
- "api_calls": 42,
+ "api_calls": 41,
  "fetched_days": 4,
- "elapsed_ms": 40149,
+ "elapsed_ms": 39133,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -63,11 +63,11 @@
     "expected": 2504,
     "diff": 0
    },
-   "weekAvg": 2132,
+   "weekAvg": 1724,
    "weekMax8": 2304,
-   "target": 5117,
-   "orderQty": 3312,
-   "daysCover": 6.1,
+   "target": 4138,
+   "orderQty": 2304,
+   "daysCover": 7.5,
    "warnings": [
     "조정 이력 af_qty 합 384 ≠ 장부 역산 128 — 장부 역산 값을 사용"
    ],
@@ -122,11 +122,11 @@
     "expected": 3482,
     "diff": 0
    },
-   "weekAvg": 793,
+   "weekAvg": 672,
    "weekMax8": 885,
-   "target": 1903,
+   "target": 1613,
    "orderQty": 0,
-   "daysCover": 27.4,
+   "daysCover": 32.3,
    "warnings": [
     "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
@@ -182,11 +182,11 @@
     "expected": 1062,
     "diff": 0
    },
-   "weekAvg": 177,
+   "weekAvg": 146,
    "weekMax8": 286,
-   "target": 425,
+   "target": 350,
    "orderQty": 0,
-   "daysCover": 39.9,
+   "daysCover": 48.3,
    "warnings": [
     "조정 이력 af_qty 합 124 ≠ 장부 역산 62 — 장부 역산 값을 사용"
    ],
@@ -321,7 +321,7 @@
   {
    "weekStart": "2026-09-20",
    "weekEnd": "2026-09-26",
-   "days": 6,
+   "days": 7,
    "invoices": 1203,
    "unknown": 0,
    "b1": 502,
@@ -332,29 +332,10 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "partial": true
+   "partial": false
   }
  ],
  "daily": [
-  {
-   "date": "2026-08-15",
-   "invoices": 0,
-   "lines": 0,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
-   "unknown": 0,
-   "byLookup": 0,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b1": 0,
-   "b2": 0,
-   "b3": 0,
-   "b4": 0,
-   "gift": 0,
-   "paper": 0,
-   "plain": 0,
-   "other": 0
-  },
   {
    "date": "2026-08-16",
    "invoices": 0,
@@ -1022,7 +1003,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-25 10:17:54"
+   "fetchedAt": "2026-09-26 10:20:13"
   },
   {
    "date": "2026-09-19",
@@ -1142,7 +1123,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-25 10:17:54"
+   "fetchedAt": "2026-09-26 10:20:13"
   },
   {
    "date": "2026-09-25",
@@ -1162,7 +1143,27 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-09-25 10:17:54"
+   "fetchedAt": "2026-09-26 10:20:13"
+  },
+  {
+   "date": "2026-09-26",
+   "invoices": 0,
+   "lines": 0,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 0,
+   "byQty": 0,
+   "unknownSigs": [],
+   "b1": 0,
+   "b2": 0,
+   "b3": 0,
+   "b4": 0,
+   "gift": 0,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-09-26 10:20:13"
   }
  ],
  "warnings": []
