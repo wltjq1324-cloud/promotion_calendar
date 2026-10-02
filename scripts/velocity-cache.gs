@@ -12,7 +12,8 @@
  *
  * 사용법
  *   1) 이 파일을 Apps Script 프로젝트에 새 스크립트 파일로 추가
- *   2) setupVelocityCache 실행 → 권한 승인 (매일 오전 8시 자동 실행 등록 + 즉시 1회 실행)
+ *   2) setupVelocityCache 실행 → 권한 승인
+ *      (출고 원본 붙여넣기 시 즉시 갱신 + 3시간마다 안전망 + 즉시 1회 실행)
  *   수동 실행은 rebuildVelocityCache.
  *
  * 안전: 출고 원본은 읽기만 한다. velocity_cache 탭만 쓴다.
@@ -31,15 +32,41 @@ var VC = {
   DAYS: 30
 };
 
-/** 최초 1회: 매일 자동 실행 등록 + 즉시 1회 실행 */
+/** 최초 1회: 자동 실행 등록 + 즉시 1회 실행 */
 function setupVelocityCache() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'rebuildVelocityCache') ScriptApp.deleteTrigger(t);
+    var fn = t.getHandlerFunction();
+    if (fn === 'rebuildVelocityCache' || fn === 'onOrdersChange') ScriptApp.deleteTrigger(t);
   });
-  // 출고 데이터를 언제 붙여넣을지 알 수 없으므로 하루 1회로는 최대 하루가 밀린다.
-  // 3시간마다 따라가고, 급할 때는 rebuildVelocityCache 를 직접 실행한다.
+  // 1) 출고 원본에 붙여넣는 순간 바로 갱신 (시간 주기로 쫓아가면 붙여넣기 직후 공백이 생긴다)
+  ScriptApp.newTrigger('onOrdersChange').forSpreadsheet(VC.ORDERS_SS_ID).onChange().create();
+  // 2) 안전망: 변경 감지가 누락돼도 3시간 안에는 따라잡는다
   ScriptApp.newTrigger('rebuildVelocityCache').timeBased().everyHours(3).create();
   return rebuildVelocityCache();
+}
+
+/**
+ * 출고 원본 스프레드시트가 바뀌면 호출된다.
+ * 같은 파일의 map_product 등을 편집해도 불리므로, raw_orders 행 수가 달라졌을 때만 재생성한다.
+ * (행 수 확인은 가벼운 호출이라 매 편집마다 불려도 부담이 없다)
+ */
+function onOrdersChange() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return; // 이미 재생성 중이면 건너뜀 — 끝나고 나면 최신 상태다
+  try {
+    var src = SpreadsheetApp.openById(VC.ORDERS_SS_ID).getSheetByName(VC.ORDERS_SHEET);
+    if (!src) return;
+    var rows = src.getLastRow();
+    var prev = Number(PropertiesService.getScriptProperties().getProperty('vcLastRows')) || 0;
+    if (rows === prev) return;
+    rebuildVelocityCache();
+    // sku_mapping 동기화(skuSync.gs)가 같은 프로젝트에 있으면 이어서 실행 → 새 상품도 바로 매핑
+    if (typeof syncSkuMapping === 'function') {
+      try { syncSkuMapping(); } catch (e) { Logger.log('sku_mapping 동기화 실패: ' + e.message); }
+    }
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /** 출고 원본 → 날짜×상품 집계 → velocity_cache 탭 */
@@ -55,6 +82,8 @@ function rebuildVelocityCache() {
   if (!dst) dst = ss.insertSheet(VC.TARGET_SHEET);
   dst.clear();
   dst.getRange(1, 1, out.rows.length, 3).setValues(out.rows);
+  // 어디까지 반영했는지 기록 → onOrdersChange 가 "행이 늘었는지" 판단할 때 쓴다
+  PropertiesService.getScriptProperties().setProperty('vcLastRows', String(src.getLastRow()));
 
   // 원본이 며칠 밀렸는지 함께 알린다.
   // (연동이 멈춘 것인지, 원본에 데이터가 안 들어온 것인지 구분하기 위해)
