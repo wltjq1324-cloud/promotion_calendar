@@ -109,6 +109,39 @@ const eq = (name, got, want) => {
   eq('오버라이드 from 이후 → 강제', m.classifyInvoice([{ code: 'G-O022', qty: 1 }], ovd, '2026-09-03').box, 'b4');
   eq('주평균(보정)', r.weekAvg, Math.round(700 * 1.1));
 
+  {
+  console.log('\n[창고 실사 기준점 — 2026-10-06 1호 2,302]');
+  const manualCfg = { date: '2026-10-06', dtm: '2026-10-06 17:14', qty: 2302, alreadyDeductedBoxes: 219, reason: '창고 실사' };
+  const apiAnc = { date: '2026-09-18', dtm: '2026-09-18 18:59:00', afQty: 384, adjQty: -6046, source: 'adjustment' };
+  const ma = m.pickAnchor(apiAnc, manualCfg);
+  eq('실사가 조정 이력보다 늦으면 실사 사용', [ma.source, ma.afQty, ma.alreadyDeducted], ['manual', 2302, 219]);
+  eq('더 늦은 아워박스 조정이 생기면 그쪽 우선', m.pickAnchor({ ...apiAnc, date: '2026-10-08', dtm: '2026-10-08 10:00:00' }, manualCfg).source, 'adjustment');
+  eq('설정 없으면 조정 이력 그대로', m.pickAnchor(apiAnc, undefined), apiAnc);
+  const putManual = [
+    { product_company_code: 'S-TB001', input_dt: '2026-10-06', input_complete_dt: '2026-10-07', input_qty: 2016, input_code: 'A' },
+    { product_company_code: 'S-TB001', input_dt: '2026-10-09', input_complete_dt: '2026-10-09', input_qty: 720, input_code: 'B' },
+    { product_company_code: 'S-TB002', input_dt: '2026-10-08', input_complete_dt: '2026-10-08', input_qty: 500, input_code: 'C' },
+  ];
+  const item1 = { key: 'b1', label: '1호', companyCode: 'S-TB001', productCode: '202927000009', bundle: 72, factor: 1 };
+  const rc = m.receiptsAfterCount(putManual, item1, '2026-10-06');
+  eq('실사일 입고(완료는 다음 날)는 제외, 이후 입고만', rc.map((x) => [x.inDate, x.qty]), [['2026-10-09', 720]]);
+  // 출고등록일 기준: 10/06 등록 1호 245(219 + 밤 N배송 26), 10/07 180
+  const reg = { '2026-10-06': { b1: 245 }, '2026-10-07': { b1: 180 } };
+  const us = m.usageSinceManual(reg, 'b1', ma, '2026-10-07');
+  eq('실사일은 이미 뺀 219 제외 → 26, 다음 날 180', [us.daily['2026-10-06'], us.daily['2026-10-07'], us.boxes, us.anchorDayRaw], [26, 180, 206, 245]);
+  eq('완료 전이라 실사일 등록분이 219보다 적어도 음수 아님', m.usageSinceManual({ '2026-10-06': { b1: 0 } }, 'b1', ma, '2026-10-06').boxes, 0);
+  const rm = m.computeItem({
+    item: item1, anchor: ma, receipts: rc, daysMap: { '2026-10-07': { b1: 999, unknown: 0, invoices: 999 } }, anchorDayUsage: 0,
+    today: '2026-10-09', apiStock: { total: 4520, available: 4520, unavailable: 0 },
+    cfg: { avgWeeks: 4, leadTimeDays: 7, reviewDays: 7, safetyRate: 0.2 }, weekly: wk,
+    usageOverride: m.usageSinceManual(reg, 'b1', ma, '2026-10-09'),
+  });
+  eq('실재고 = 2302 + 720 − (26 + 180), 완료일 기준 출고(999)는 안 씀', rm.est, 2302 + 720 - 206);
+  eq('기준점 표시', [rm.count.qty, rm.count.source, rm.count.reason, rm.usage.basis], [2302, 'manual', '창고 실사', 'out_dt']);
+  eq('장부 대조값 없음(장부는 창고 실사를 모름)', [rm.apiStock.expected, rm.apiStock.diff], [null, null]);
+  eq('일별 재고(입고=실제 입고일)', rm.stockDaily, { '2026-10-06': 2276, '2026-10-07': 2096, '2026-10-08': 2096, '2026-10-09': 2816 });
+  }
+
   console.log(`\n통과 ${pass} / 실패 ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

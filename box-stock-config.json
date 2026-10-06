@@ -58,7 +58,17 @@
       "from": "2026-09-03"
     }
   },
-  "lookupOverridesNote": "송장 서명 → 박스 키 강제 지정. 값은 'b4' 또는 {box, from}(from 이후 출고에만 적용). 8개입(G-O142) 조합은 2026-09-03부터 3호→4호 포장 전환(창고 계산 대조: 전체 기간 적용 시 3호 −199, 미적용 시 +508).",
+  "manualCounts": {
+    "b1": {
+      "date": "2026-10-06",
+      "dtm": "2026-10-06 17:14",
+      "qty": 2302,
+      "alreadyDeductedBoxes": 219,
+      "reason": "창고 실사"
+    }
+  },
+  "manualCountsNote": "창고가 실물을 센 재고(아워박스 조정 이력에 없는 실사). 키별 {date, dtm, qty, alreadyDeductedBoxes, reason}. 이후 입고 = 실제 입고일(input_dt)이 date 다음 날부터, 이후 출고 = 출고등록일 기준 상자 수(date 당일 등록분은 alreadyDeductedBoxes만큼 이미 빠진 것으로 봄). 아워박스에 더 늦은 재고 조정이 생기면 그쪽이 우선. 2026-10-06 1호: 창고 실사 2,302 = 오늘 입고 2,016 포함, 오늘 출고등록 1호 219상자(OMS 통합관리 엑셀 포장박스 기준) 차감 후.",
+  "lookupOverridesNote":"송장 서명 → 박스 키 강제 지정. 값은 'b4' 또는 {box, from}(from 이후 출고에만 적용). 8개입(G-O142) 조합은 2026-09-03부터 3호→4호 포장 전환(창고 계산 대조: 전체 기간 적용 시 3호 −199, 미적용 시 +508).",
   "leadTimeDays": 7,
   "reviewDays": 7,
   "safetyRate": 0.2,

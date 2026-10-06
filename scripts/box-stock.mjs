@@ -5,6 +5,8 @@
 //   (박스는 출고 건별 차감이 없고 실사 때만 조정된다). 그래서 매일:
 //     실재고 ≈ 마지막 실사 잔고 + 이후 입고 − 이후 출고 박스 × factor
 //   를 계산해 box-stock-latest.json 으로 남기고 /inven 페이지가 읽는다.
+//   창고 실사(config.manualCounts)가 있으면 그 수량이 기준점이고, 이후 입고는 실제 입고일,
+//   이후 출고는 출고등록일 기준으로 센다(pickAnchor / receiptsAfterCount / usageSinceManual).
 //
 // 아워박스 API 사용 (모두 POST, 헤더 api_access_key / api_secret_key)
 //   /api/wms/stock/stock_adj_hist   재고 조정 이력 → 품목별 최신 조정(reg_dtm, 사유). 실사인지 수기 보정인지 API는 구분 못 함
@@ -174,6 +176,51 @@ export function latestAdjustments(rows, items) {
   return out;
 }
 
+// ── 창고 실사(수동 기준점) ──
+// config.manualCounts[key] = { date, dtm, qty, alreadyDeductedBoxes, reason }
+// 창고가 실물을 센 값. 아워박스 조정 이력이 이보다 늦으면(재실사) 조정 이력이 이긴다.
+// 2026-10-06: 9/18 조정(128) 이후 9/19~21 계산 재고가 음수(−316)로 내려가 기준점 자체를 믿을 수 없어 창고 실사 2,302로 바꿈.
+export function pickAnchor(apiAnchor, manual) {
+  if (!manual || !manual.date || !Number.isFinite(Number(manual.qty))) return apiAnchor;
+  const mDtm = text(manual.dtm) || `${manual.date} 23:59:59`;
+  if (apiAnchor && apiAnchor.source === 'adjustment' && text(apiAnchor.dtm) > mDtm) return apiAnchor;
+  return {
+    date: text(manual.date), dtm: mDtm, afQty: toInt(manual.qty), adjQty: 0,
+    reason: text(manual.reason) || '창고 실사', source: 'manual',
+    alreadyDeducted: toInt(manual.alreadyDeductedBoxes),
+  };
+}
+
+// 실사 이후 입고 — 실제 입고일(input_dt)이 실사일 이후인 것만. 실사일까지 들어온 실물은 실사 수량에 이미 들어 있다
+// (입고완료일은 하루 늦게 찍힌다: 9/23 입고 11276 = 입고일 9/22 · 완료 9/23).
+export function receiptsAfterCount(rows, item, countDate) {
+  const codes = new Set([item.companyCode, item.productCode].filter(Boolean).map(text));
+  const list = [];
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (!codes.has(text(r.product_company_code)) && !codes.has(text(r.product_code))) continue;
+    const inDate = text(r.input_dt || r.input_complete_dt).slice(0, 10);
+    if (!inDate || inDate <= countDate) continue;
+    list.push({ date: text(r.input_complete_dt || r.input_dt).slice(0, 10), inDate, qty: toInt(r.input_qty), code: text(r.input_code) });
+  }
+  list.sort((a, b) => (a.inDate < b.inDate ? -1 : 1));
+  return list;
+}
+
+// 실사 이후 출고 — 출고등록일(out_dt_type '1') 일별 집계 regDays 로 센다. 실사일 등록분 중 창고가 이미 뺀 상자
+// (alreadyDeducted, 그날 작업분)는 빼고 나머지(실사 뒤 추가 등록 — 자정 N배송 등)만 차감한다.
+export function usageSinceManual(regDays, key, anchor, today) {
+  const daily = {};
+  let boxes = 0, anchorDayRaw = 0;
+  for (const d of dateList(anchor.date, today)) {
+    const rec = regDays && regDays[d];
+    let n = rec ? (rec[key] || 0) : 0;
+    if (d === anchor.date) { anchorDayRaw = n; n = Math.max(0, n - (anchor.alreadyDeducted || 0)); }
+    daily[d] = n;
+    boxes += n;
+  }
+  return { boxes, daily, anchorDayRaw };
+}
+
 // 입고실적 → 품목별 [{date, qty}] (afterDtm 이후만)
 export function receiptsSince(rows, item, afterDtm) {
   const codes = new Set([item.companyCode, item.productCode].filter(Boolean).map(text));
@@ -231,7 +278,7 @@ export function orderSuggestion({ weekAvg, est, bundle, leadTimeDays, reviewDays
 }
 
 // 품목 하나의 실재고 계산 (anchor 이후 일별 사용량은 daysMap 에서, 실사 당일은 anchorDayUsage 로 따로)
-export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, today, apiStock, cfg, weekly }) {
+export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, today, apiStock, cfg, weekly, usageOverride }) {
   const since = anchor.date;
   let boxes = anchorDayUsage || 0;
   let unknownShare = 0, unknownTotal = 0, invTotal = 0;
@@ -241,6 +288,8 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
     boxes += rec[item.key] || 0;
     unknownTotal += rec.unknown; invTotal += rec.invoices;
   }
+  // 창고 실사 기준점: 출고는 출고등록일 기준(usageSinceManual)으로 바꿔 센다
+  if (usageOverride) boxes = usageOverride.boxes;
   if (invTotal) unknownShare = Math.round((unknownTotal / invTotal) * 1000) / 10;
   const inQty = receipts.reduce((s, r) => s + r.qty, 0);
   const adjusted = Math.round(boxes * item.factor);
@@ -273,8 +322,21 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
   const weekMax8 = full.length ? Math.max(...full.map((w) => (w[item.key] || 0))) : 0;
   const sug = orderSuggestion({ weekAvg, est, bundle: item.bundle,
     leadTimeDays: cfg.leadTimeDays, reviewDays: cfg.reviewDays, safetyRate: cfg.safetyRate });
-  const expected = anchorQty + inQty;
-  if (anchor.source !== 'adjustment') warnings.push('최근 실사 조정 이력이 없어 API 장부재고를 기준점으로 삼았습니다.');
+  const manual = anchor.source === 'manual';
+  // 장부재고는 창고 실사를 모른다 → 수동 기준점이면 장부 대조값을 내지 않는다
+  const expected = manual ? null : anchorQty + inQty;
+  if (anchor.source !== 'adjustment' && !manual) warnings.push('최근 실사 조정 이력이 없어 API 장부재고를 기준점으로 삼았습니다.');
+  // 실사일부터 오늘까지 일별 재고(타임라인용) — 입고는 실제 입고일, 출고는 출고등록일
+  let stockDaily = null;
+  if (usageOverride) {
+    stockDaily = {};
+    let s = anchorQty;
+    for (const d of dateList(since, today)) {
+      s += receipts.filter((r) => (r.inDate || r.date) === d).reduce((a, r) => a + r.qty, 0);
+      s -= Math.round((usageOverride.daily[d] || 0) * item.factor);
+      stockDaily[d] = s;
+    }
+  }
   if (est <= 0 && !substituted) warnings.push('추정 실재고가 0 이하입니다. 실물 확인이 필요합니다.');
   if (unknownShare >= 15) warnings.push(`박스 종류 미판정 송장 ${unknownShare}% — box-lookup 갱신 필요`);
   return {
@@ -283,8 +345,10 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
     lossRate: (cfg.lossRateNote || {})[item.key] || 0,
     count: { date: anchor.date, dtm: anchor.dtm, qty: anchorQty, afQtyRaw: anchor.afQty, adjQty: anchor.adjQty, reason: anchor.reason || '', source: anchorSource },
     receipts: { qty: inQty, list: receipts },
-    usage: { boxes, adjusted, since, unknownShare, substituted },
-    est, rawEst, apiStock: apiStock ? { ...apiStock, expected, diff: apiStock.total - expected } : null,
+    usage: { boxes, adjusted, since, unknownShare, substituted,
+      ...(usageOverride ? { basis: 'out_dt', anchorDayRaw: usageOverride.anchorDayRaw, alreadyDeducted: anchor.alreadyDeducted || 0 } : {}) },
+    est, rawEst, apiStock: apiStock ? { ...apiStock, expected, diff: expected == null ? null : apiStock.total - expected } : null,
+    ...(stockDaily ? { stockDaily } : {}),
     weekAvg, weekMax8, ...sug, warnings,
   };
 }
@@ -381,6 +445,7 @@ export async function main() {
         warnings.push(`${it.label}: ${cfg.adjLookbackDays}일 내 실사 조정 이력 없음 → 오늘 장부재고를 기준점으로 사용`);
       }
     }
+    anchors[it.key] = pickAnchor(anchors[it.key], (cfg.manualCounts || {})[it.key]);
   }
   const earliest = Object.values(anchors).map((a) => a.date).sort()[0] || today;
 
@@ -416,19 +481,39 @@ export async function main() {
     fetchedDays += 1;
     await sleep(cfg.requestSleepMs);
   }
+  // 4-2) 창고 실사 기준점 품목: 출고등록일 기준 일별 집계(regDays). 밤 배치로 늦게 완료되는 송장이 있어 최근 며칠은 다시 받는다.
+  dailyStore.regDays = dailyStore.regDays || {};
+  const manualDates = cfg.items.filter((it) => anchors[it.key].source === 'manual').map((it) => anchors[it.key].date).sort();
+  if (manualDates.length) {
+    const regRefetch = addDays(today, -(cfg.refetchRecentDays + 1));
+    for (const d of dateList(manualDates[0], today)) {
+      if (dailyStore.regDays[d] && d < regRefetch && !cfg.rebuildDailyOnce) continue;
+      const datas = await fetchPages('/api/wms/out/out_perf_period',
+        { out_dt_type: '1', out_dt_from: d, out_dt_to: d }, 'datas', k, cfg, cfg.maxPagesPerDay);
+      const rec = aggregateDay(d, datas, lookup);
+      rec.fetchedAt = now;
+      dailyStore.regDays[d] = rec;
+      fetchedDays += 1;
+      await sleep(cfg.requestSleepMs);
+    }
+  }
   // 오래된 날 정리
   for (const d of Object.keys(dailyStore.days)) if (d < addDays(today, -cfg.dailyKeepDays)) delete dailyStore.days[d];
+  for (const d of Object.keys(dailyStore.regDays)) if (d < addDays(today, -cfg.dailyKeepDays)) delete dailyStore.regDays[d];
 
   // 5) 집계
   const weekly = weeklyFromDaily(dailyStore.days, today, cfg.outputWeeks);
   const items = cfg.items.map((it) => {
     const a = anchors[it.key];
-    const anchorDay = rawByDate[a.date]
+    const manual = a.source === 'manual';
+    const anchorDay = !manual && rawByDate[a.date]
       ? aggregateDay(a.date, rawByDate[a.date], lookup, a.dtm)[it.key] || 0
       : 0;
     const r = computeItem({
-      item: it, anchor: a, receipts: receiptsSince(putRows, it, a.dtm), daysMap: dailyStore.days,
-      anchorDayUsage: anchorDay, today, apiStock: apiStock[it.key] || null, cfg, weekly,
+      item: it, anchor: a,
+      receipts: manual ? receiptsAfterCount(putRows, it, a.date) : receiptsSince(putRows, it, a.dtm),
+      daysMap: dailyStore.days, anchorDayUsage: anchorDay, today, apiStock: apiStock[it.key] || null, cfg, weekly,
+      usageOverride: manual ? usageSinceManual(dailyStore.regDays, it.key, a, today) : null,
     });
     r.receiptsDaily = receiptsDailyMap(putRows, it, windowFrom, today);
     return r;
