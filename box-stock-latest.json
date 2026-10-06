@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-06 11:48:15",
+ "generated_at": "2026-10-06 17:17:42",
  "source": "ourbox-openapi",
- "api_calls": 43,
- "fetched_days": 4,
- "elapsed_ms": 38656,
+ "api_calls": 44,
+ "fetched_days": 5,
+ "elapsed_ms": 40210,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -29,48 +29,46 @@
    "factor": 1,
    "lossRate": 0.1,
    "count": {
-    "date": "2026-09-18",
-    "dtm": "2026-09-18 18:59:00",
-    "qty": 128,
-    "afQtyRaw": 384,
-    "adjQty": -6046,
-    "reason": "직접입력",
-    "source": "ledger_identity"
+    "date": "2026-10-06",
+    "dtm": "2026-10-06 17:14",
+    "qty": 2302,
+    "afQtyRaw": 2302,
+    "adjQty": 0,
+    "reason": "창고 실사",
+    "source": "manual"
    },
    "receipts": {
-    "qty": 2376,
-    "list": [
-     {
-      "date": "2026-09-23",
-      "qty": 2376,
-      "code": "11276"
-     }
-    ]
+    "qty": 0,
+    "list": []
    },
    "usage": {
-    "boxes": 2046,
-    "adjusted": 2046,
-    "since": "2026-09-18",
+    "boxes": 0,
+    "adjusted": 0,
+    "since": "2026-10-06",
     "unknownShare": 0,
-    "substituted": 0
+    "substituted": 0,
+    "basis": "out_dt",
+    "anchorDayRaw": 0,
+    "alreadyDeducted": 219
    },
-   "est": 458,
-   "rawEst": 458,
+   "est": 2302,
+   "rawEst": 2302,
    "apiStock": {
     "total": 2504,
     "available": 2504,
     "unavailable": 0,
-    "expected": 2504,
-    "diff": 0
+    "expected": null,
+    "diff": null
+   },
+   "stockDaily": {
+    "2026-10-06": 2302
    },
    "weekAvg": 1460,
    "weekMax8": 2304,
    "target": 3504,
-   "orderQty": 3096,
-   "daysCover": 2.2,
-   "warnings": [
-    "조정 이력 af_qty 합 384 ≠ 장부 역산 128 — 장부 역산 값을 사용"
-   ],
+   "orderQty": 1224,
+   "daysCover": 11,
+   "warnings": [],
    "receiptsDaily": {
     "2026-09-16": 3240,
     "2026-09-23": 2376
@@ -89,7 +87,7 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 0,
+    "afQtyRaw": 1446,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
@@ -126,7 +124,7 @@
    "orderQty": 0,
    "daysCover": 28.7,
    "warnings": [
-    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
@@ -805,7 +803,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-06 11:48:15"
+   "fetchedAt": "2026-10-06 17:17:42"
   },
   {
    "date": "2026-09-19",
@@ -1125,7 +1123,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-06 11:48:15"
+   "fetchedAt": "2026-10-06 17:17:42"
   },
   {
    "date": "2026-10-05",
@@ -1145,7 +1143,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-06 11:48:15"
+   "fetchedAt": "2026-10-06 17:17:42"
   },
   {
    "date": "2026-10-06",
@@ -1165,7 +1163,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-06 11:48:15"
+   "fetchedAt": "2026-10-06 17:17:42"
   }
  ],
  "warnings": []
