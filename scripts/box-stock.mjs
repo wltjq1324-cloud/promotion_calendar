@@ -188,16 +188,21 @@ export function pickAnchor(apiAnchor, manual) {
     date: text(manual.date), dtm: mDtm, afQty: toInt(manual.qty), adjQty: 0,
     reason: text(manual.reason) || '창고 실사', source: 'manual',
     alreadyDeducted: toInt(manual.alreadyDeductedBoxes),
+    includedReceiptCodes: (Array.isArray(manual.includedReceiptCodes) ? manual.includedReceiptCodes : []).map(text),
   };
 }
 
 // 실사 이후 입고 — 실제 입고일(input_dt)이 실사일 이후인 것만. 실사일까지 들어온 실물은 실사 수량에 이미 들어 있다
 // (입고완료일은 하루 늦게 찍힌다: 9/23 입고 11276 = 입고일 9/22 · 완료 9/23).
-export function receiptsAfterCount(rows, item, countDate) {
+// 입고일 자체가 늦게 찍히는 경우도 있다(10/06 실물 입고 2,016 = 입고번호 11675, 입고일 10/07로 등록) →
+// 실사에 들어 있는 입고번호는 includedReceiptCodes 로 명시해 제외한다.
+export function receiptsAfterCount(rows, item, countDate, includedCodes = []) {
   const codes = new Set([item.companyCode, item.productCode].filter(Boolean).map(text));
+  const skip = new Set((includedCodes || []).map(text));
   const list = [];
   for (const r of Array.isArray(rows) ? rows : []) {
     if (!codes.has(text(r.product_company_code)) && !codes.has(text(r.product_code))) continue;
+    if (skip.has(text(r.input_code))) continue;
     const inDate = text(r.input_dt || r.input_complete_dt).slice(0, 10);
     if (!inDate || inDate <= countDate) continue;
     list.push({ date: text(r.input_complete_dt || r.input_dt).slice(0, 10), inDate, qty: toInt(r.input_qty), code: text(r.input_code) });
@@ -511,7 +516,7 @@ export async function main() {
       : 0;
     const r = computeItem({
       item: it, anchor: a,
-      receipts: manual ? receiptsAfterCount(putRows, it, a.date) : receiptsSince(putRows, it, a.dtm),
+      receipts: manual ? receiptsAfterCount(putRows, it, a.date, a.includedReceiptCodes) : receiptsSince(putRows, it, a.dtm),
       daysMap: dailyStore.days, anchorDayUsage: anchorDay, today, apiStock: apiStock[it.key] || null, cfg, weekly,
       usageOverride: manual ? usageSinceManual(dailyStore.regDays, it.key, a, today) : null,
     });

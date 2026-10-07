@@ -140,6 +140,19 @@ const eq = (name, got, want) => {
   eq('기준점 표시', [rm.count.qty, rm.count.source, rm.count.reason, rm.usage.basis], [2302, 'manual', '창고 실사', 'out_dt']);
   eq('장부 대조값 없음(장부는 창고 실사를 모름)', [rm.apiStock.expected, rm.apiStock.diff], [null, null]);
   eq('일별 재고(입고=실제 입고일)', rm.stockDaily, { '2026-10-06': 2276, '2026-10-07': 2096, '2026-10-08': 2096, '2026-10-09': 2816 });
+  // 실측 10/07: 10/06 실물 입고 2,016이 입고번호 11675, 입고일 10/07로 등록됨 → 입고번호로 명시 제외
+  const ma2 = m.pickAnchor(apiAnc, { ...manualCfg, includedReceiptCodes: ['11675'] });
+  const put1007 = [{ product_company_code: 'S-TB001', input_dt: '2026-10-07', input_complete_dt: '2026-10-07', input_qty: 2016, input_code: '11675' },
+    { product_company_code: 'S-TB001', input_dt: '2026-10-08', input_complete_dt: '2026-10-08', input_qty: 720, input_code: '11700' }];
+  eq('입고번호 지정 없으면 10/07 입고일로 다시 더해짐(실측 버그)', m.receiptsAfterCount(put1007, item1, '2026-10-06').reduce((a, x) => a + x.qty, 0), 2736);
+  eq('실사 포함 입고번호 11675 제외, 이후 입고만', m.receiptsAfterCount(put1007, item1, '2026-10-06', ma2.includedReceiptCodes).map((x) => [x.code, x.qty]), [['11700', 720]]);
+  const r1007 = m.computeItem({
+    item: item1, anchor: ma2, receipts: m.receiptsAfterCount([put1007[0]], item1, '2026-10-06', ma2.includedReceiptCodes), daysMap: {}, anchorDayUsage: 0,
+    today: '2026-10-07', apiStock: { total: 4520, available: 4520, unavailable: 0 },
+    cfg: { avgWeeks: 4, leadTimeDays: 7, reviewDays: 7, safetyRate: 0.2 }, weekly: wk,
+    usageOverride: m.usageSinceManual({ '2026-10-06': { b1: 239 }, '2026-10-07': { b1: 12 } }, 'b1', ma2, '2026-10-07'),
+  });
+  eq('10/07 실측 재현: 2302 − (239−219) − 12 = 2270', r1007.est, 2270);
   }
 
   console.log(`\n통과 ${pass} / 실패 ${fail}`);
