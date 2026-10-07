@@ -478,14 +478,15 @@ export async function main() {
   }
 
   // 4) 출고실적 일별 (증분: 저장된 날은 건너뛰고 최근 N일은 다시 받는다)
-  const fetchFrom = addDays(earliest, 0);
+  // 기준일 이후 + 화면 표시 창(outputDailyDays) 중 이른 날부터. 캐시에 B2B 품목 집계(b2b)가 없는 옛 날은 한 번 다시 받는다.
+  const fetchFrom = earliest < windowFrom ? earliest : windowFrom;
   const refetchFrom = addDays(today, -cfg.refetchRecentDays);
   const rawByDate = {}; // 실사 당일 시간 필터용 원본 보관
   let fetchedDays = 0;
   for (const d of dateList(fetchFrom, today)) {
     const cached = dailyStore.days[d];
     const isAnchorDay = Object.values(anchors).some((a) => a.date === d);
-    if (cached && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
+    if (cached && Array.isArray(cached.b2b) && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
     const datas = await fetchPages('/api/wms/out/out_perf_period',
       { out_dt_type: '2', out_dt_from: d, out_dt_to: d }, 'datas', k, cfg, cfg.maxPagesPerDay);
     const rec = aggregateDay(d, datas, lookup);
