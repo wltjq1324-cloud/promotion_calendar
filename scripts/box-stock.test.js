@@ -155,6 +155,20 @@ const eq = (name, got, want) => {
   eq('10/07 실측 재현: 2302 − (239−219) − 12 = 2270', r1007.est, 2270);
   }
 
+  {
+    console.log('\n[B2B 출고 품목 집계]');
+    const rows = [
+      { invoice: '', out_data_sno: 'A1', product_company_code: 'G-O022', product_name: '오리지널(10개입)', out_qty: 1800, mall_name: '밭(파머스베이크샵)' },
+      { invoice: '', out_data_sno: 'A2', product_company_code: 'G-O022', product_name: '오리지널(10개입)', out_qty: 50, mall_name: '밭(파머스베이크샵)' },
+      { invoice: '', out_data_sno: 'A3', product_company_code: 'G-O152', product_name: '[라한] 가을수확여행', out_qty: 200, mall_name: '' },
+      { invoice: '111', product_company_code: 'G-O022', out_qty: 1 },
+    ];
+    const day = m.aggregateDay('2026-10-01', rows, lookup);
+    eq('송장 없는 행만 품목별 합산, 큰 순', day.b2b.map((x) => [x.code, x.qty]), [['G-O022', 1850], ['G-O152', 200]]);
+    eq('품명·채널 보존', [day.b2b[0].name, day.b2b[0].ch], ['오리지널(10개입)', ['밭(파머스베이크샵)']]);
+    eq('택배 송장은 박스로만 집계', [day.invoices, day.noInvoiceQty], [1, 2050]);
+    eq('빈 날은 b2b 빈 배열', m.emptyDay('2026-10-02').b2b, []);
+  }
   console.log(`\n통과 ${pass} / 실패 ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

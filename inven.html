@@ -130,6 +130,7 @@
       <div class="boxgrid" id="boxGrid"></div>
       <div class="boxes-timeline" id="boxTimeline"></div>
       <div class="boxes-usage" id="boxUsage"></div>
+      <div class="boxes-timeline" id="boxB2B"></div>
       <p class="boxes-note" id="boxNote"></p>
     </div>
   </section>
@@ -265,6 +266,21 @@ function renderBoxTimeline(d){const host=$('boxTimeline');host.innerHTML='';if(!
   });
   h+='</tbody></table>';
   host.innerHTML=h}
+// B2B 출고(송장 없는 벌크·차량 출고) 4주 타임라인 — 품목별 일 출고수량. 박스 타임라인과 같은 28일 창.
+function renderB2BTimeline(d){const host=$('boxB2B');host.innerHTML='';if(!d||d.status!=='ok')return;
+  const today=(d.generated_at||'').slice(0,10);if(!today)return;
+  const tD=parseKey(today),ws=new Date(tD);ws.setDate(ws.getDate()-ws.getDay()-21);const days=[];for(let i=0;i<28;i++){const x=new Date(ws);x.setDate(x.getDate()+i);days.push(toKey(x))}
+  const W=['일','월','화','수','목','금','토'],dm=new Map((d.daily||[]).map(x=>[x.date,x]));
+  const items=new Map();days.forEach((x,i)=>{const r=dm.get(x);((r&&r.b2b)||[]).forEach(e=>{const it=items.get(e.code)||{code:e.code,name:e.name||e.code,ch:new Set(),q:new Array(28).fill(0),tot:0};it.q[i]+=e.qty;it.tot+=e.qty;(e.ch||[]).forEach(c=>it.ch.add(c));items.set(e.code,it)})});
+  const list=[...items.values()].sort((a,b)=>b.tot-a.tot);
+  const totals=days.map((_,i)=>list.reduce((s,it)=>s+it.q[i],0)),maxQ=Math.max(1,...list.flatMap(it=>it.q));
+  let h='<table class="tl"><thead><tr><th class="lab">B2B 출고 (송장 없는 벌크)</th>';
+  for(let w=0;w<4;w++){const a=days[w*7],b=days[w*7+6];h+=`<th class="wk" colspan="7">${a.slice(5).replace('-','/')} ~ ${b.slice(5).replace('-','/')}${b>=today&&a<=today?' (금주)':''}</th>`}
+  h+='<th class="wk">4주 합계</th></tr><tr><th class="lab">날짜</th>'+days.map(x=>`<th class="${x===today?'today':''}">${x.slice(8)}<br><small>${W[parseKey(x).getDay()]}</small></th>`).join('')+'<th></th></tr></thead><tbody>';
+  if(!list.length){h+=`<tr><td class="lab">최근 4주 B2B 출고 없음</td>${days.map(x=>`<td class="z ${x===today?'today':''}">·</td>`).join('')}<td class="z">0</td></tr>`}
+  else{h+=`<tr class="grp"><td class="lab">전체 · 수량</td>${totals.map((v,i)=>`<td class="${days[i]===today?'today ':''}${days[i]>today?'fut ':''}${v?'stk':'z'}">${days[i]>today?'':(v?num(v):'·')}</td>`).join('')}<td class="stk">${num(totals.reduce((a,b)=>a+b,0))}</td></tr>`;
+    list.forEach(it=>{h+=`<tr><td class="lab" title="${it.code}${it.ch.size?' · '+[...it.ch].join(', '):''}">${it.name}</td>${it.q.map((v,i)=>{const x=days[i];const bg=v&&x<=today?`style="background:rgba(23,107,135,${(0.06+0.34*v/maxQ).toFixed(2)})"`:'';return `<td class="${x===today?'today ':''}${x>today?'fut ':''}${v?'':'z'}" ${bg}>${x>today?'':(v?num(v):'·')}</td>`}).join('')}<td class="stk">${num(it.tot)}</td></tr>`})}
+  host.innerHTML=h+'</tbody></table>'}
 function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.style.display='none';return}box.style.display='';applyBoxCollapsed();const grid=$('boxGrid'),meta=$('boxStockMeta'),note=$('boxNote'),usage=$('boxUsage'),mini=$('boxMini');grid.innerHTML='';usage.innerHTML='';mini.textContent='';
   if(d.status!=='ok'||!Array.isArray(d.items)){meta.textContent=d.status==='pending'?'첫 수집 대기':'로드 실패';mini.textContent=meta.textContent;note.textContent=d.message||(d.last_error&&d.last_error.message)||'';return}
   const cfg=d.config||{},cov=d.coverage||{};
@@ -276,7 +292,7 @@ function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.st
       <dl><dt>재고 조정 후 잔고 (${it.count.date.slice(5)}${it.count.reason?` · ${it.count.reason}`:''})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd><dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>아워박스 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
       <div class="order">발주 제안 <b>${num(it.orderQty)}</b> <span class="muted">(목표 ${num(it.target)} · 묶음 ${it.bundle})</span></div>${it.daysCover!=null?`<div class="sub" style="margin-top:6px">남은 예상일수 <b>${Math.floor(it.daysCover)}일</b> · 소진 예상 ${(()=>{const x=parseKey((d.generated_at||'').slice(0,10));x.setDate(x.getDate()+Math.floor(it.daysCover));return `${x.getMonth()+1}/${x.getDate()}(${"일월화수목금토"[x.getDay()]})`})()}</div>`:''}
       ${(it.warnings||[]).filter(w=>!w.includes('af_qty')).length?`<ul class="warnlist">${it.warnings.filter(w=>!w.includes('af_qty')).map(w=>`<li>${w}</li>`).join('')}</ul>`:''}`;grid.appendChild(card)});
-  renderBoxTimeline(d);
+  renderBoxTimeline(d);renderB2BTimeline(d);
   const wk=(d.weekly||[]).filter(w=>w.invoices>0).slice(-6),dailyMap=new Map((d.daily||[]).map(x=>[x.date,x])),DOW=['일','월','화','수','목','금','토'];
   if(wk.length){usage.innerHTML=`<table><thead><tr><th>주간 출고 박스 (일~토) <small class="muted" style="font-weight:700">· 행을 누르면 일자별</small></th><th class="num">1호</th><th class="num">2호</th><th class="num">3호</th><th class="num">4호</th><th class="num">미판정</th><th class="num">송장 합계</th></tr></thead><tbody>${wk.map((w,i)=>{
       const days=[];for(let t=parseKey(w.weekStart);toKey(t)<=w.weekEnd;t.setDate(t.getDate()+1)){const r=dailyMap.get(toKey(t));if(r&&r.invoices)days.push(r)}

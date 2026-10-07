@@ -102,7 +102,7 @@ export function classifyInvoice(lines, lookup, date = '') {
 
 export function emptyDay(date) {
   const d = { date, invoices: 0, lines: 0, noInvoiceGroups: 0, noInvoiceQty: 0,
-    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [] };
+    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [] };
   for (const k of BOX_KEYS) d[k] = 0;
   return d;
 }
@@ -112,6 +112,8 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
   const day = emptyDay(date);
   const byInvoice = new Map();
   const noInvoice = new Map();
+  // 송장 없는 행 = B2B 벌크(차량 출고). 품목별 수량을 남겨 화면의 B2B 출고 타임라인에 쓴다.
+  const b2b = new Map();
   for (const r of Array.isArray(datas) ? datas : []) {
     day.lines += 1;
     const line = {
@@ -123,6 +125,12 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
       const g = text(r.out_data_sno || r.out_sno || r.od_sno) || `line${day.lines}`;
       if (!noInvoice.has(g)) noInvoice.set(g, 0);
       noInvoice.set(g, noInvoice.get(g) + line.qty);
+      const bk = line.code || line.productCode || '?';
+      const e = b2b.get(bk) || { code: bk, name: text(r.product_name), qty: 0, ch: [] };
+      e.qty += line.qty;
+      const ch = text(r.mall_name || r.channel);
+      if (ch && !e.ch.includes(ch)) e.ch.push(ch);
+      b2b.set(bk, e);
       continue;
     }
     // 송장 열이 콤마로 여러 개 올 수 있다(out_perf). 첫 송장으로 묶는다.
@@ -148,6 +156,7 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
   }
   day.noInvoiceGroups = noInvoice.size;
   day.noInvoiceQty = [...noInvoice.values()].reduce((s, q) => s + q, 0);
+  day.b2b = [...b2b.values()].sort((a, b) => b.qty - a.qty);
   day.unknownSigs = [...unknownSigs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([sig, n]) => `${sig} ×${n}`);
   return day;
