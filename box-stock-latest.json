@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-12 11:11:24",
+ "generated_at": "2026-10-13 12:25:57",
  "source": "ourbox-openapi",
- "api_calls": 54,
+ "api_calls": 79,
  "fetched_days": 9,
- "elapsed_ms": 48171,
+ "elapsed_ms": 72451,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -42,8 +42,8 @@
     "list": []
    },
    "usage": {
-    "boxes": 352,
-    "adjusted": 352,
+    "boxes": 989,
+    "adjusted": 989,
     "since": "2026-10-06",
     "unknownShare": 0,
     "substituted": 0,
@@ -51,8 +51,8 @@
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 1950,
-   "rawEst": 1950,
+   "est": 1313,
+   "rawEst": 1313,
    "apiStock": {
     "total": 4520,
     "available": 4520,
@@ -67,13 +67,14 @@
     "2026-10-09": 2037,
     "2026-10-10": 2003,
     "2026-10-11": 1950,
-    "2026-10-12": 1950
+    "2026-10-12": 1340,
+    "2026-10-13": 1313
    },
    "weekAvg": 1092,
    "weekMax8": 2304,
    "target": 2621,
-   "orderQty": 720,
-   "daysCover": 12.5,
+   "orderQty": 1368,
+   "daysCover": 8.4,
    "warnings": [],
    "receiptsDaily": {
     "2026-09-16": 3240,
@@ -94,7 +95,7 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 1446,
+    "afQtyRaw": 0,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
@@ -110,14 +111,14 @@
     ]
    },
    "usage": {
-    "boxes": 1242,
-    "adjusted": 1242,
+    "boxes": 1478,
+    "adjusted": 1478,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 2240,
-   "rawEst": 2240,
+   "est": 2004,
+   "rawEst": 2004,
    "apiStock": {
     "total": 3482,
     "available": 3482,
@@ -129,9 +130,9 @@
    "weekMax8": 885,
    "target": 1226,
    "orderQty": 0,
-   "daysCover": 30.7,
+   "daysCover": 27.5,
    "warnings": [
-    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
@@ -172,14 +173,14 @@
     ]
    },
    "usage": {
-    "boxes": 162,
-    "adjusted": 162,
+    "boxes": 182,
+    "adjusted": 182,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1290,
-   "rawEst": 1290,
+   "est": 1270,
+   "rawEst": 1270,
    "apiStock": {
     "total": 1452,
     "available": 1452,
@@ -191,7 +192,7 @@
    "weekMax8": 286,
    "target": 166,
    "orderQty": 0,
-   "daysCover": 130.9,
+   "daysCover": 128.8,
    "warnings": [
     "조정 이력 af_qty 합 124 ≠ 장부 역산 62 — 장부 역산 값을 사용"
    ],
@@ -324,14 +325,14 @@
   {
    "weekStart": "2026-10-11",
    "weekEnd": "2026-10-17",
-   "days": 2,
-   "invoices": 102,
+   "days": 3,
+   "invoices": 1101,
    "unknown": 0,
-   "b1": 53,
-   "b2": 12,
-   "b3": 3,
-   "b4": 32,
-   "gift": 2,
+   "b1": 690,
+   "b2": 248,
+   "b3": 23,
+   "b4": 127,
+   "gift": 13,
    "paper": 0,
    "plain": 0,
    "other": 0,
@@ -339,52 +340,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-09-01",
-   "invoices": 521,
-   "lines": 791,
-   "noInvoiceGroups": 13,
-   "noInvoiceQty": 13,
-   "unknown": 0,
-   "byLookup": 521,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b2b": [
-    {
-     "code": "G-O034",
-     "name": "[L]오리지널 10개입",
-     "qty": 11,
-     "ch": [
-      "롯데홈쇼핑-직택배(일반)"
-     ]
-    },
-    {
-     "code": "G-O095",
-     "name": "치즈감자빵(5개입)",
-     "qty": 1,
-     "ch": [
-      "롯데홈쇼핑-직택배(일반)"
-     ]
-    },
-    {
-     "code": "G-O025",
-     "name": "오리지널(5개입)",
-     "qty": 1,
-     "ch": [
-      "롯데홈쇼핑-직택배(일반)"
-     ]
-    }
-   ],
-   "b1": 161,
-   "b2": 158,
-   "b3": 141,
-   "b4": 61,
-   "gift": 0,
-   "paper": 0,
-   "plain": 0,
-   "other": 0,
-   "fetchedAt": "2026-10-08 08:51:35"
-  },
   {
    "date": "2026-09-02",
    "invoices": 309,
@@ -1339,7 +1294,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-12 11:11:24"
+   "fetchedAt": "2026-10-13 12:25:57"
   },
   {
    "date": "2026-09-19",
@@ -1983,7 +1938,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-12 11:11:24"
+   "fetchedAt": "2026-10-13 12:25:57"
   },
   {
    "date": "2026-10-07",
@@ -2138,28 +2093,90 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-12 11:11:24"
+   "fetchedAt": "2026-10-13 12:25:57"
   },
   {
    "date": "2026-10-12",
-   "invoices": 0,
-   "lines": 0,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
+   "invoices": 684,
+   "lines": 1011,
+   "noInvoiceGroups": 43,
+   "noInvoiceQty": 45,
    "unknown": 0,
-   "byLookup": 0,
-   "byQty": 0,
+   "byLookup": 681,
+   "byQty": 3,
    "unknownSigs": [],
-   "b2b": [],
-   "b1": 0,
-   "b2": 0,
-   "b3": 0,
-   "b4": 0,
-   "gift": 0,
+   "b2b": [
+    {
+     "code": "G-O034",
+     "name": "[L]오리지널 10개입",
+     "qty": 30,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O142",
+     "name": "오리지널감자빵 100g 8개입",
+     "qty": 7,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O094",
+     "name": "고구마빵(4개입)",
+     "qty": 5,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O025",
+     "name": "오리지널(5개입)",
+     "qty": 2,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O095",
+     "name": "치즈감자빵(5개입)",
+     "qty": 1,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    }
+   ],
+   "b1": 435,
+   "b2": 177,
+   "b3": 16,
+   "b4": 46,
+   "gift": 10,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-12 11:11:24"
+   "fetchedAt": "2026-10-13 12:25:57"
+  },
+  {
+   "date": "2026-10-13",
+   "invoices": 315,
+   "lines": 384,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 313,
+   "byQty": 2,
+   "unknownSigs": [],
+   "b2b": [],
+   "b1": 202,
+   "b2": 59,
+   "b3": 4,
+   "b4": 49,
+   "gift": 1,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-10-13 12:25:57"
   }
  ],
  "warnings": []
