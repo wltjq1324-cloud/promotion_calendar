@@ -32,7 +32,7 @@ h1{margin:0;font-size:clamp(26px,3vw,40px);line-height:1.1}
 .metric-value{margin-top:10px;font-size:26px;font-weight:900}
 .metric-note{margin-top:6px;color:var(--muted);font-size:12px}
 .calendar-shell{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:var(--shadow)}
-.calendar-grid{min-width:900px;display:grid;grid-template-columns:repeat(7,minmax(92px,1fr)) 170px}
+.calendar-grid{min-width:960px;display:grid;grid-template-columns:repeat(7,minmax(92px,1fr)) 220px}
 .day-header,.week-header{position:sticky;top:0;z-index:2;min-height:44px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fbfcfe;padding:12px 10px;font-size:13px;font-weight:900;text-align:center}
 .week-header{border-right:0;background:#eef6f8;color:var(--brand-dark)}
 .day-cell{min-height:130px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;padding:5px 2px 5px 6px;position:relative;overflow:visible}
@@ -54,19 +54,16 @@ h1{margin:0;font-size:clamp(26px,3vw,40px);line-height:1.1}
 .week-total{min-height:130px;border-bottom:1px solid var(--line);background:#f2faf9;padding:8px;font-size:10.5px;line-height:1.4}
 .week-total-head{font-weight:900;color:var(--brand-dark);font-size:11.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;gap:14px}
 .week-total-sum{color:var(--brand-dark);font-weight:900;font-size:13px;white-space:nowrap}
-.week-promo{margin:0;padding:3px 0;border-bottom:1px dashed #d3e3e6}
-.week-promo>summary{display:flex;align-items:baseline;gap:6px;cursor:pointer;list-style:none}
-.week-promo>summary::-webkit-details-marker{display:none}
-.week-promo>summary::before{content:'▸';color:var(--muted);font-size:9px;flex:0 0 auto}
-.week-promo[open]>summary::before{content:'▾'}
-.week-promo>summary:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
-.week-promo-qty{margin-left:auto;flex:0 0 auto;color:var(--brand-dark);font-weight:800;font-variant-numeric:tabular-nums}
-.week-promo-body{padding:3px 0 4px 12px}
-.week-total-head{cursor:pointer}
+.week-section-label{margin:8px 0 3px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.02em}
+.week-sku-row,.week-promo{display:flex;align-items:baseline;gap:6px;padding:2px 0;border-bottom:1px dashed #d3e3e6}
+.week-sku-row:last-of-type,.week-promo:last-child{border-bottom:0}
+.week-sku-name{flex:1;min-width:0;color:var(--ink);font-weight:700;font-size:11px;line-height:1.3;word-break:keep-all;overflow-wrap:anywhere}
+.week-sku-qty,.week-promo-qty{margin-left:auto;flex:0 0 auto;color:var(--brand-dark);font-weight:900;font-size:11px;font-variant-numeric:tabular-nums}
+.week-promo:hover{background:rgba(23,107,135,.06)}
 .sync-status{margin:6px 0 0;color:var(--muted);font-size:12px;font-weight:700}
 .sync-toast{position:fixed;right:20px;bottom:20px;z-index:40;background:var(--brand-dark);color:#fff;border-radius:8px;padding:12px 16px;font-weight:800;font-size:13px;box-shadow:var(--shadow)}
 .week-promo:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
-.week-promo-name{font-weight:800;color:var(--ink);font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.week-promo-name{flex:1;font-weight:600;color:var(--muted);font-size:10.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .week-promo-sku{color:var(--muted);font-size:10.5px;line-height:1.45;padding-left:3px}
 .week-total-empty{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.48);padding:20px}
@@ -321,7 +318,7 @@ textarea{min-height:80px;resize:vertical}
 <section class="calendar-shell">
   <div class="calendar-grid" id="calendarGrid"></div>
 </section>
-<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-10-16a</p>
+<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-10-16b</p>
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -1202,6 +1199,16 @@ function getPromoSkuInWeek(p,week){
   const span=Math.round((parseKey(p.end_date)-parseKey(p.start_date))/86400000)+1;
   return parseSku(p.product_name).map(r=>({items:r.items,qty:Math.round((Number(r.qty)||0)/span*days)})).filter(r=>r.qty>0);
 }
+// 한 주에 나갈 단품 수량. "A + B" 묶음 1개는 A 1개, B 1개로 나눠 센다.
+function weekSkuTotals(promos,week){
+  const map=new Map();
+  promos.forEach(p=>(getPromoSkuInWeek(p,week)||[]).forEach(r=>(r.items||[]).forEach(it=>{
+    const k=String(it||'').trim();if(!k)return;map.set(k,(map.get(k)||0)+(Number(r.qty)||0));
+  })));
+  return [...map.entries()].filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+}
+// 좁은 칸에서 읽히도록 가장 흔한 접두어 "[단품]"만 뗀다. [세트]/[증정] 은 구분에 필요해 남긴다.
+function shortSkuName(n){return String(n).replace(/^\[단품\]\s*/,'')}
 function isNaverPromotion(p){
   return String(p.channel||'').trim()==='네이버';
 }
@@ -1353,30 +1360,34 @@ function renderCalendar(){
     const box=el('div','week-total');
     const weekPromos=state.promotions.filter(p=>week.some(d=>{const k=toKey(d);return p.start_date<=k&&p.end_date>=k}));
     const head=el('div','week-total-head');
-    head.appendChild(el('span','',`${wi+1}주차 예상 출고${weekPromos.length?` · ${weekPromos.length}건`:''}`));
+    head.appendChild(el('span','',`${wi+1}주차 예상 출고`));
     head.appendChild(el('span','week-total-sum',num(getWeekQty(week))+'개'));
-    head.title='누르면 이 주 SKU 세부를 모두 펼치거나 접습니다';
-    head.onclick=()=>{const all=[...box.querySelectorAll('details.week-promo')];const open=!all.every(d=>d.open);all.forEach(d=>d.open=open)};
     box.appendChild(head);
     if(!weekPromos.length){
       box.appendChild(el('div','week-total-empty','등록된 프로모션 없음'));
     }else{
-      // 칸 높이에 가려 스크롤 아래로 숨던 문제: 이름은 전부 한 줄씩 보이고, 세부만 접어 둔다.
-      weekPromos.forEach(p=>{
-        const skus=getPromoSkuInWeek(p,week)||[];
-        const pb=document.createElement('details');pb.className='week-promo';
-        const sm=document.createElement('summary');
-        const nm=el('span','week-promo-name',weekPromoTitle(p));nm.title=weekPromoTitle(p);
-        sm.appendChild(nm);
-        sm.appendChild(el('span','week-promo-qty',num(getPromoQtyInWeek(p,week))+'개'));
-        pb.appendChild(sm);
-        const body=el('div','week-promo-body');
-        body.appendChild(el('div','week-promo-sku','행사 '+p.start_date.slice(5)+' ~ '+p.end_date.slice(5)));
-        if(skus.length)skus.forEach(s=>body.appendChild(el('div','week-promo-sku','· '+formatSkuLine(s))));
-        else body.appendChild(el('div','week-promo-sku','· 이 주 배분 수량 없음 (기간 대비 수량이 적음)'));
-        pb.appendChild(body);
-        box.appendChild(pb);
-      });
+      // 물류가 실제로 준비하는 건 단품이므로, 이 주에 나갈 수량을 SKU별로 합쳐서 접지 않고 바로 보인다.
+      const skuTotals=weekSkuTotals(weekPromos,week);
+      box.appendChild(el('div','week-section-label','SKU별 소요량 (묶음은 구성품별로 셈)'));
+      if(skuTotals.length){
+        skuTotals.forEach(([name,qty])=>{
+          const row=el('div','week-sku-row');
+          const nm=el('span','week-sku-name',shortSkuName(name));nm.title=name;
+          row.appendChild(nm);row.appendChild(el('span','week-sku-qty',num(qty)+'개'));
+          box.appendChild(row);
+        });
+      }else box.appendChild(el('div','week-total-empty','이 주 배분 수량 없음'));
+      // 외부 화면은 프로모션 이름이 모두 "출고 항목"으로 같아 목록이 의미가 없다 → 내부 화면에서만 보인다.
+      if(ROLE!=='external'){
+        box.appendChild(el('div','week-section-label',`프로모션 ${weekPromos.length}건`));
+        weekPromos.forEach(p=>{
+          const row=el('div','week-promo');
+          const nm=el('span','week-promo-name',weekPromoTitle(p));nm.title=`${p.title} (${p.start_date.slice(5)} ~ ${p.end_date.slice(5)})`;
+          row.appendChild(nm);row.appendChild(el('span','week-promo-qty',num(getPromoQtyInWeek(p,week))+'개'));
+          if(getRoleConfig().canOpenDetail){row.style.cursor='pointer';row.onclick=()=>openEditModal(p)}
+          box.appendChild(row);
+        });
+      }
     }
     grid.appendChild(box);
   });
