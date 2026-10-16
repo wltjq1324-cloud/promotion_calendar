@@ -6,7 +6,8 @@
 
 | 파일 | 역할 |
 |---|---|
-| `index.html`, `calendar-base.html` | 프로모션 운영 캘린더. 서버는 Apps Script 웹앱(`scripts/promotion-api.gs` 백업본) |
+| `index.html` | 프로모션 운영 캘린더. 서버는 Apps Script 웹앱(`scripts/promotion-api.gs` 백업본) |
+| `calendar-base.html` | 옛 캘린더 사본 → `index.html` 로 자동 이동만 한다(같은 서버에 저장되는 옛 화면이 쓰이지 않게) |
 | `inven.html` (`/inven`) | SKU별 재고 현황 + **박스 실재고(근사치)** 섹션. 접속 코드 게이트(`ACCESS_CODES`) |
 | `inventory-latest.json` | 아워박스 재고 스냅샷. `update-inventory` 워크플로가 30분마다 갱신(`scripts/update-inventory.ps1`) |
 | `box-stock-latest.json`, `box-daily.json` | 박스 실재고 결과·일별 출고 캐시. `update-box-stock` 워크플로가 매일 08:00 KST 갱신 |

@@ -119,7 +119,10 @@ function readPromotions_() {
     PROMO_FIELDS.forEach(function (key) {
       var i = fm.map[key];
       if (i === undefined) { rec[key] = ''; return; }
-      rec[key] = (key === 'start_date' || key === 'end_date') ? dateKey_(row[i]) : text_(row[i]);
+      if (key === 'start_date' || key === 'end_date') rec[key] = dateKey_(row[i]);
+      // 최종수정일시는 시각까지 넘긴다. 날짜만 넘기면 같은 날 수정분의 순서를 알 수 없다.
+      else if (key === 'updated_at') rec[key] = dateTimeKey_(row[i]);
+      else rec[key] = text_(row[i]);
     });
     out.push(rec);
   });
@@ -255,6 +258,13 @@ function dateKey_(v) {
     return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
   }
   return String(v).trim();
+}
+
+function dateTimeKey_(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  }
+  return text_(v);
 }
 
 function numeric_(v) {
