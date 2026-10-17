@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-16 10:04:43",
+ "generated_at": "2026-10-17 10:11:17",
  "source": "ourbox-openapi",
- "api_calls": 124,
+ "api_calls": 100,
  "fetched_days": 9,
- "elapsed_ms": 100476,
+ "elapsed_ms": 86817,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -38,24 +38,31 @@
     "source": "manual"
    },
    "receipts": {
-    "qty": 0,
-    "list": []
+    "qty": 2016,
+    "list": [
+     {
+      "date": "2026-10-16",
+      "inDate": "2026-10-16",
+      "qty": 2016,
+      "code": "11973"
+     }
+    ]
    },
    "usage": {
-    "boxes": 3024,
-    "adjusted": 3024,
+    "boxes": 3335,
+    "adjusted": 3335,
     "since": "2026-10-06",
     "unknownShare": 0,
-    "substituted": 722,
+    "substituted": 0,
     "basis": "out_dt",
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 0,
-   "rawEst": -722,
+   "est": 983,
+   "rawEst": 983,
    "apiStock": {
-    "total": 4520,
-    "available": 4520,
+    "total": 6536,
+    "available": 6536,
     "unavailable": 0,
     "expected": null,
     "diff": null
@@ -71,20 +78,20 @@
     "2026-10-13": 452,
     "2026-10-14": -329,
     "2026-10-15": -715,
-    "2026-10-16": -722
+    "2026-10-16": 991,
+    "2026-10-17": 983
    },
-   "weekAvg": 1092,
-   "weekMax8": 2304,
-   "target": 2621,
-   "orderQty": 2664,
-   "daysCover": 0,
-   "warnings": [
-    "출고 박스가 재고를 722 초과 — 다른 호수로 대체 포장한 것으로 추정. 실물 확인 필요"
-   ],
+   "weekAvg": 1361,
+   "weekMax8": 3036,
+   "target": 3266,
+   "orderQty": 2304,
+   "daysCover": 5.1,
+   "warnings": [],
    "receiptsDaily": {
     "2026-09-16": 3240,
     "2026-09-23": 2376,
-    "2026-10-07": 2016
+    "2026-10-07": 2016,
+    "2026-10-16": 2016
    }
   },
   {
@@ -106,42 +113,48 @@
     "source": "ledger_identity"
    },
    "receipts": {
-    "qty": 1000,
+    "qty": 1940,
     "list": [
      {
       "date": "2026-09-23",
       "qty": 1000,
       "code": "11276"
+     },
+     {
+      "date": "2026-10-16",
+      "qty": 940,
+      "code": "11973"
      }
     ]
    },
    "usage": {
-    "boxes": 2352,
-    "adjusted": 2352,
+    "boxes": 2474,
+    "adjusted": 2474,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1130,
-   "rawEst": 1130,
+   "est": 1948,
+   "rawEst": 1948,
    "apiStock": {
-    "total": 3482,
-    "available": 3482,
+    "total": 4422,
+    "available": 4422,
     "unavailable": 0,
-    "expected": 3482,
+    "expected": 4422,
     "diff": 0
    },
-   "weekAvg": 511,
-   "weekMax8": 885,
-   "target": 1226,
-   "orderQty": 100,
-   "daysCover": 15.5,
+   "weekAvg": 601,
+   "weekMax8": 1244,
+   "target": 1442,
+   "orderQty": 0,
+   "daysCover": 22.7,
    "warnings": [
     "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
-    "2026-09-23": 1000
+    "2026-09-23": 1000,
+    "2026-10-16": 940
    }
   },
   {
@@ -178,14 +191,14 @@
     ]
    },
    "usage": {
-    "boxes": 260,
-    "adjusted": 260,
+    "boxes": 261,
+    "adjusted": 261,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1192,
-   "rawEst": 1192,
+   "est": 1191,
+   "rawEst": 1191,
    "apiStock": {
     "total": 1452,
     "available": 1452,
@@ -193,11 +206,11 @@
     "expected": 1452,
     "diff": 0
    },
-   "weekAvg": 69,
+   "weekAvg": 64,
    "weekMax8": 286,
-   "target": 166,
+   "target": 154,
    "orderQty": 0,
-   "daysCover": 120.9,
+   "daysCover": 130.3,
    "warnings": [
     "조정 이력 af_qty 합 124 ≠ 장부 역산 62 — 장부 역산 값을 사용"
    ],
@@ -330,42 +343,21 @@
   {
    "weekStart": "2026-10-11",
    "weekEnd": "2026-10-17",
-   "days": 6,
-   "invoices": 4440,
+   "days": 7,
+   "invoices": 4951,
    "unknown": 0,
-   "b1": 2725,
-   "b2": 1122,
-   "b3": 101,
-   "b4": 464,
-   "gift": 28,
+   "b1": 3036,
+   "b2": 1244,
+   "b3": 102,
+   "b4": 536,
+   "gift": 33,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "partial": true
+   "partial": false
   }
  ],
  "daily": [
-  {
-   "date": "2026-09-05",
-   "invoices": 330,
-   "lines": 411,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
-   "unknown": 0,
-   "byLookup": 330,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b2b": [],
-   "b1": 123,
-   "b2": 36,
-   "b3": 5,
-   "b4": 166,
-   "gift": 0,
-   "paper": 0,
-   "plain": 0,
-   "other": 0,
-   "fetchedAt": "2026-10-08 08:51:35"
-  },
   {
    "date": "2026-09-06",
    "invoices": 199,
@@ -1090,7 +1082,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-16 10:04:43"
+   "fetchedAt": "2026-10-17 10:11:17"
   },
   {
    "date": "2026-09-19",
@@ -1734,7 +1726,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-16 10:04:43"
+   "fetchedAt": "2026-10-17 10:11:17"
   },
   {
    "date": "2026-10-07",
@@ -2139,28 +2131,82 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-16 10:04:43"
+   "fetchedAt": "2026-10-17 10:11:17"
   },
   {
    "date": "2026-10-16",
-   "invoices": 138,
-   "lines": 191,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
+   "invoices": 503,
+   "lines": 730,
+   "noInvoiceGroups": 6,
+   "noInvoiceQty": 8,
    "unknown": 0,
-   "byLookup": 136,
+   "byLookup": 501,
    "byQty": 2,
    "unknownSigs": [],
-   "b2b": [],
-   "b1": 61,
-   "b2": 32,
-   "b3": 4,
-   "b4": 40,
-   "gift": 1,
+   "b2b": [
+    {
+     "code": "G-O094",
+     "name": "고구마빵(4개입)",
+     "qty": 4,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O142",
+     "name": "오리지널감자빵 100g 8개입",
+     "qty": 2,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O095",
+     "name": "치즈감자빵(5개입)",
+     "qty": 1,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O025",
+     "name": "오리지널(5개입)",
+     "qty": 1,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    }
+   ],
+   "b1": 290,
+   "b2": 134,
+   "b3": 5,
+   "b4": 68,
+   "gift": 6,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-16 10:04:43"
+   "fetchedAt": "2026-10-17 10:11:17"
+  },
+  {
+   "date": "2026-10-17",
+   "invoices": 146,
+   "lines": 177,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 146,
+   "byQty": 0,
+   "unknownSigs": [],
+   "b2b": [],
+   "b1": 82,
+   "b2": 20,
+   "b3": 0,
+   "b4": 44,
+   "gift": 0,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-10-17 10:11:17"
   }
  ],
  "warnings": []
