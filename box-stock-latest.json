@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-17 10:11:17",
+ "generated_at": "2026-10-18 09:45:38",
  "source": "ourbox-openapi",
- "api_calls": 100,
+ "api_calls": 77,
  "fetched_days": 9,
- "elapsed_ms": 86817,
+ "elapsed_ms": 63107,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -49,8 +49,8 @@
     ]
    },
    "usage": {
-    "boxes": 3335,
-    "adjusted": 3335,
+    "boxes": 3376,
+    "adjusted": 3376,
     "since": "2026-10-06",
     "unknownShare": 0,
     "substituted": 0,
@@ -58,8 +58,8 @@
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 983,
-   "rawEst": 983,
+   "est": 942,
+   "rawEst": 942,
    "apiStock": {
     "total": 6536,
     "available": 6536,
@@ -79,13 +79,14 @@
     "2026-10-14": -329,
     "2026-10-15": -715,
     "2026-10-16": 991,
-    "2026-10-17": 983
+    "2026-10-17": 942,
+    "2026-10-18": 942
    },
-   "weekAvg": 1361,
-   "weekMax8": 3036,
-   "target": 3266,
-   "orderQty": 2304,
-   "daysCover": 5.1,
+   "weekAvg": 1371,
+   "weekMax8": 3077,
+   "target": 3290,
+   "orderQty": 2376,
+   "daysCover": 4.8,
    "warnings": [],
    "receiptsDaily": {
     "2026-09-16": 3240,
@@ -107,7 +108,7 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 1446,
+    "afQtyRaw": 0,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
@@ -128,14 +129,14 @@
     ]
    },
    "usage": {
-    "boxes": 2474,
-    "adjusted": 2474,
+    "boxes": 2492,
+    "adjusted": 2492,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1948,
-   "rawEst": 1948,
+   "est": 1930,
+   "rawEst": 1930,
    "apiStock": {
     "total": 4422,
     "available": 4422,
@@ -143,13 +144,13 @@
     "expected": 4422,
     "diff": 0
    },
-   "weekAvg": 601,
-   "weekMax8": 1244,
-   "target": 1442,
+   "weekAvg": 605,
+   "weekMax8": 1262,
+   "target": 1452,
    "orderQty": 0,
-   "daysCover": 22.7,
+   "daysCover": 22.3,
    "warnings": [
-    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
@@ -191,14 +192,14 @@
     ]
    },
    "usage": {
-    "boxes": 261,
-    "adjusted": 261,
+    "boxes": 262,
+    "adjusted": 262,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1191,
-   "rawEst": 1191,
+   "est": 1190,
+   "rawEst": 1190,
    "apiStock": {
     "total": 1452,
     "available": 1452,
@@ -206,11 +207,11 @@
     "expected": 1452,
     "diff": 0
    },
-   "weekAvg": 64,
+   "weekAvg": 65,
    "weekMax8": 286,
-   "target": 154,
+   "target": 156,
    "orderQty": 0,
-   "daysCover": 130.3,
+   "daysCover": 128.2,
    "warnings": [
     "조정 이력 af_qty 합 124 ≠ 장부 역산 62 — 장부 역산 값을 사용"
    ],
@@ -228,22 +229,6 @@
   "unknownSigs": []
  },
  "weekly": [
-  {
-   "weekStart": "2026-08-23",
-   "weekEnd": "2026-08-29",
-   "days": 3,
-   "invoices": 803,
-   "unknown": 0,
-   "b1": 416,
-   "b2": 211,
-   "b3": 70,
-   "b4": 104,
-   "gift": 2,
-   "paper": 0,
-   "plain": 0,
-   "other": 0,
-   "partial": true
-  },
   {
    "weekStart": "2026-08-30",
    "weekEnd": "2026-09-05",
@@ -344,41 +329,36 @@
    "weekStart": "2026-10-11",
    "weekEnd": "2026-10-17",
    "days": 7,
-   "invoices": 4951,
+   "invoices": 5032,
    "unknown": 0,
-   "b1": 3036,
-   "b2": 1244,
-   "b3": 102,
-   "b4": 536,
+   "b1": 3077,
+   "b2": 1262,
+   "b3": 103,
+   "b4": 557,
    "gift": 33,
    "paper": 0,
    "plain": 0,
    "other": 0,
    "partial": false
-  }
- ],
- "daily": [
+  },
   {
-   "date": "2026-09-06",
-   "invoices": 199,
-   "lines": 258,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
+   "weekStart": "2026-10-18",
+   "weekEnd": "2026-10-24",
+   "days": 1,
+   "invoices": 0,
    "unknown": 0,
-   "byLookup": 199,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b2b": [],
-   "b1": 113,
-   "b2": 39,
-   "b3": 1,
-   "b4": 46,
+   "b1": 0,
+   "b2": 0,
+   "b3": 0,
+   "b4": 0,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-08 08:51:35"
-  },
+   "partial": true
+  }
+ ],
+ "daily": [
   {
    "date": "2026-09-07",
    "invoices": 825,
@@ -1082,7 +1062,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-17 10:11:17"
+   "fetchedAt": "2026-10-18 09:45:38"
   },
   {
    "date": "2026-09-19",
@@ -1726,7 +1706,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-17 10:11:17"
+   "fetchedAt": "2026-10-18 09:45:38"
   },
   {
    "date": "2026-10-07",
@@ -2185,28 +2165,49 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-17 10:11:17"
+   "fetchedAt": "2026-10-18 09:45:38"
   },
   {
    "date": "2026-10-17",
-   "invoices": 146,
-   "lines": 177,
+   "invoices": 227,
+   "lines": 286,
    "noInvoiceGroups": 0,
    "noInvoiceQty": 0,
    "unknown": 0,
-   "byLookup": 146,
-   "byQty": 0,
+   "byLookup": 226,
+   "byQty": 1,
    "unknownSigs": [],
    "b2b": [],
-   "b1": 82,
-   "b2": 20,
-   "b3": 0,
-   "b4": 44,
+   "b1": 123,
+   "b2": 38,
+   "b3": 1,
+   "b4": 65,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-17 10:11:17"
+   "fetchedAt": "2026-10-18 09:45:38"
+  },
+  {
+   "date": "2026-10-18",
+   "invoices": 0,
+   "lines": 0,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 0,
+   "byQty": 0,
+   "unknownSigs": [],
+   "b2b": [],
+   "b1": 0,
+   "b2": 0,
+   "b3": 0,
+   "b4": 0,
+   "gift": 0,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-10-18 09:45:38"
   }
  ],
  "warnings": []
