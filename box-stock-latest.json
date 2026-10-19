@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-19 09:58:58",
+ "generated_at": "2026-10-20 08:19:46",
  "source": "ourbox-openapi",
- "api_calls": 63,
+ "api_calls": 81,
  "fetched_days": 9,
- "elapsed_ms": 61504,
+ "elapsed_ms": 69929,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -49,8 +49,8 @@
     ]
    },
    "usage": {
-    "boxes": 3437,
-    "adjusted": 3437,
+    "boxes": 3983,
+    "adjusted": 3983,
     "since": "2026-10-06",
     "unknownShare": 0,
     "substituted": 0,
@@ -58,8 +58,8 @@
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 881,
-   "rawEst": 881,
+   "est": 335,
+   "rawEst": 335,
    "apiStock": {
     "total": 6536,
     "available": 6536,
@@ -81,13 +81,14 @@
     "2026-10-16": 991,
     "2026-10-17": 942,
     "2026-10-18": 881,
-    "2026-10-19": 881
+    "2026-10-19": 340,
+    "2026-10-20": 335
    },
    "weekAvg": 1371,
    "weekMax8": 3077,
    "target": 3290,
-   "orderQty": 2448,
-   "daysCover": 4.5,
+   "orderQty": 3024,
+   "daysCover": 1.7,
    "warnings": [],
    "receiptsDaily": {
     "2026-09-16": 3240,
@@ -109,7 +110,7 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 1446,
+    "afQtyRaw": 0,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
@@ -129,15 +130,26 @@
      }
     ]
    },
+   "manualAdj": {
+    "qty": -1000,
+    "list": [
+     {
+      "date": "2026-10-19",
+      "dtm": "2026-10-19 12:00",
+      "qty": -1000,
+      "reason": "수동 차감(존 요청)"
+     }
+    ]
+   },
    "usage": {
-    "boxes": 2518,
-    "adjusted": 2518,
+    "boxes": 2797,
+    "adjusted": 2797,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1904,
-   "rawEst": 1904,
+   "est": 625,
+   "rawEst": 625,
    "apiStock": {
     "total": 4422,
     "available": 4422,
@@ -148,10 +160,10 @@
    "weekAvg": 605,
    "weekMax8": 1262,
    "target": 1452,
-   "orderQty": 0,
-   "daysCover": 22,
+   "orderQty": 840,
+   "daysCover": 7.2,
    "warnings": [
-    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
@@ -192,15 +204,26 @@
      }
     ]
    },
+   "manualAdj": {
+    "qty": -100,
+    "list": [
+     {
+      "date": "2026-10-19",
+      "dtm": "2026-10-19 12:00",
+      "qty": -100,
+      "reason": "수동 차감(존 요청)"
+     }
+    ]
+   },
    "usage": {
-    "boxes": 263,
-    "adjusted": 263,
+    "boxes": 287,
+    "adjusted": 287,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1189,
-   "rawEst": 1189,
+   "est": 1065,
+   "rawEst": 1065,
    "apiStock": {
     "total": 1452,
     "available": 1452,
@@ -212,7 +235,7 @@
    "weekMax8": 286,
    "target": 156,
    "orderQty": 0,
-   "daysCover": 128,
+   "daysCover": 114.7,
    "warnings": [
     "조정 이력 af_qty 합 124 ≠ 장부 역산 62 — 장부 역산 값을 사용"
    ],
@@ -345,14 +368,14 @@
   {
    "weekStart": "2026-10-18",
    "weekEnd": "2026-10-24",
-   "days": 2,
-   "invoices": 122,
+   "days": 3,
+   "invoices": 1110,
    "unknown": 0,
-   "b1": 61,
-   "b2": 26,
-   "b3": 1,
-   "b4": 33,
-   "gift": 1,
+   "b1": 607,
+   "b2": 305,
+   "b3": 25,
+   "b4": 169,
+   "gift": 4,
    "paper": 0,
    "plain": 0,
    "other": 0,
@@ -360,124 +383,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-09-08",
-   "invoices": 412,
-   "lines": 738,
-   "noInvoiceGroups": 41,
-   "noInvoiceQty": 4959,
-   "unknown": 0,
-   "byLookup": 412,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b2b": [
-    {
-     "code": "G-O025",
-     "name": "오리지널(5개입)",
-     "qty": 3672,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O094",
-     "name": "고구마빵(4개입)",
-     "qty": 240,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O095",
-     "name": "치즈감자빵(5개입)",
-     "qty": 192,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O150",
-     "name": "밭트러리세트",
-     "qty": 186,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O154",
-     "name": "프리미엄선물세트 (2/2/2/2세트)",
-     "qty": 150,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "S-TB009",
-     "name": "[아이스박스] 선물세트(T5)",
-     "qty": 150,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "S-PM001",
-     "name": "[부직포] 선물세트가방",
-     "qty": 150,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O064",
-     "name": "삼색 새참 도시락 6개입",
-     "qty": 144,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O084",
-     "name": "고르곤졸라 감자빵 6개입",
-     "qty": 30,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O128",
-     "name": "초당옥수수빵 5개입",
-     "qty": 24,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O034",
-     "name": "[L]오리지널 10개입",
-     "qty": 16,
-     "ch": [
-      "롯데홈쇼핑-직택배(일반)"
-     ]
-    },
-    {
-     "code": "G-S075",
-     "name": "[굿즈] 산리오 초당옥수수 포크",
-     "qty": 5,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    }
-   ],
-   "b1": 199,
-   "b2": 102,
-   "b3": 17,
-   "b4": 80,
-   "gift": 14,
-   "paper": 0,
-   "plain": 0,
-   "other": 0,
-   "fetchedAt": "2026-10-08 08:51:35"
-  },
   {
    "date": "2026-09-09",
    "invoices": 352,
@@ -1017,7 +922,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-19 09:58:58"
+   "fetchedAt": "2026-10-20 08:19:46"
   },
   {
    "date": "2026-09-19",
@@ -1661,7 +1566,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-19 09:58:58"
+   "fetchedAt": "2026-10-20 08:19:46"
   },
   {
    "date": "2026-10-07",
@@ -2162,28 +2067,90 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-19 09:58:58"
+   "fetchedAt": "2026-10-20 08:19:46"
   },
   {
    "date": "2026-10-19",
-   "invoices": 0,
-   "lines": 0,
+   "invoices": 865,
+   "lines": 1263,
+   "noInvoiceGroups": 16,
+   "noInvoiceQty": 17,
+   "unknown": 0,
+   "byLookup": 857,
+   "byQty": 8,
+   "unknownSigs": [],
+   "b2b": [
+    {
+     "code": "G-O034",
+     "name": "[L]오리지널 10개입",
+     "qty": 10,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O142",
+     "name": "오리지널감자빵 100g 8개입",
+     "qty": 3,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O094",
+     "name": "고구마빵(4개입)",
+     "qty": 2,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O095",
+     "name": "치즈감자빵(5개입)",
+     "qty": 1,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    },
+    {
+     "code": "G-O025",
+     "name": "오리지널(5개입)",
+     "qty": 1,
+     "ch": [
+      "롯데홈쇼핑-직택배(일반)"
+     ]
+    }
+   ],
+   "b1": 503,
+   "b2": 256,
+   "b3": 21,
+   "b4": 82,
+   "gift": 3,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-10-20 08:19:46"
+  },
+  {
+   "date": "2026-10-20",
+   "invoices": 123,
+   "lines": 161,
    "noInvoiceGroups": 0,
    "noInvoiceQty": 0,
    "unknown": 0,
-   "byLookup": 0,
-   "byQty": 0,
+   "byLookup": 121,
+   "byQty": 2,
    "unknownSigs": [],
    "b2b": [],
-   "b1": 0,
-   "b2": 0,
-   "b3": 0,
-   "b4": 0,
+   "b1": 43,
+   "b2": 23,
+   "b3": 3,
+   "b4": 54,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-19 09:58:58"
+   "fetchedAt": "2026-10-20 08:19:46"
   }
  ],
  "warnings": []
