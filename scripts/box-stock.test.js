@@ -153,6 +153,19 @@ const eq = (name, got, want) => {
     usageOverride: m.usageSinceManual({ '2026-10-06': { b1: 239 }, '2026-10-07': { b1: 12 } }, 'b1', ma2, '2026-10-07'),
   });
   eq('10/07 실측 재현: 2302 − (239−219) − 12 = 2270', r1007.est, 2270);
+  // 수동 차감(10/19 2호 −1,000): 기준점 이후 것만, 더 늦은 실사가 생기면 빠진다
+  const adjCfg = [{ key: 'b1', date: '2026-10-07', dtm: '2026-10-07 12:00', qty: -1000 }, { key: 'b2', date: '2026-10-07', qty: -5 },
+    { key: 'b1', date: '2026-10-01', qty: -7 }];
+  const adj = m.adjustmentsAfter(adjCfg, 'b1', ma2);
+  eq('기준점 이전 조정·다른 박스는 제외', adj.map((x) => x.qty), [-1000]);
+  eq('더 늦은 실사 뒤면 조정 소멸', m.adjustmentsAfter(adjCfg, 'b1', { date: '2026-10-08', dtm: '2026-10-08 10:00' }), []);
+  const rAdj = m.computeItem({
+    item: item1, anchor: ma2, receipts: [], daysMap: {}, anchorDayUsage: 0,
+    today: '2026-10-07', apiStock: null, cfg: { avgWeeks: 4, leadTimeDays: 7, reviewDays: 7, safetyRate: 0.2 }, weekly: wk,
+    usageOverride: m.usageSinceManual({ '2026-10-06': { b1: 239 }, '2026-10-07': { b1: 12 } }, 'b1', ma2, '2026-10-07'),
+    manualAdj: adj,
+  });
+  eq('수동 차감 반영: 2270 − 1000', [rAdj.est, rAdj.manualAdj.qty, rAdj.stockDaily['2026-10-06'], rAdj.stockDaily['2026-10-07']], [1270, -1000, 2282, 1270]);
   }
 
   {

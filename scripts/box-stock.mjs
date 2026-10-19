@@ -201,6 +201,17 @@ export function pickAnchor(apiAnchor, manual) {
   };
 }
 
+// 수동 수량 조정 — config.manualAdjustments = [{ key, date, dtm, qty, reason }] (qty 음수 = 차감)
+// 기준점(실사/조정) 이후 것만 반영한다. 더 늦은 실사가 생기면 그 수량에 이미 들어 있으므로 자동으로 빠진다.
+export function adjustmentsAfter(list, key, anchor) {
+  const from = text(anchor && anchor.dtm) || `${text(anchor && anchor.date)} 23:59:59`;
+  return (Array.isArray(list) ? list : [])
+    .filter((a) => a && a.key === key && Number.isFinite(Number(a.qty)))
+    .map((a) => ({ date: text(a.date), dtm: text(a.dtm) || `${text(a.date)} 23:59:59`, qty: toInt(a.qty), reason: text(a.reason) }))
+    .filter((a) => a.date && a.dtm > from)
+    .sort((a, b) => (a.dtm < b.dtm ? -1 : 1));
+}
+
 // 실사 이후 입고 — 실제 입고일(input_dt)이 실사일 이후인 것만. 실사일까지 들어온 실물은 실사 수량에 이미 들어 있다
 // (입고완료일은 하루 늦게 찍힌다: 9/23 입고 11276 = 입고일 9/22 · 완료 9/23).
 // 입고일 자체가 늦게 찍히는 경우도 있다(10/06 실물 입고 2,016 = 입고번호 11675, 입고일 10/07로 등록) →
@@ -292,7 +303,7 @@ export function orderSuggestion({ weekAvg, est, bundle, leadTimeDays, reviewDays
 }
 
 // 품목 하나의 실재고 계산 (anchor 이후 일별 사용량은 daysMap 에서, 실사 당일은 anchorDayUsage 로 따로)
-export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, today, apiStock, cfg, weekly, usageOverride }) {
+export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, today, apiStock, cfg, weekly, usageOverride, manualAdj = [] }) {
   const since = anchor.date;
   let boxes = anchorDayUsage || 0;
   let unknownShare = 0, unknownTotal = 0, invTotal = 0;
@@ -319,7 +330,8 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
       warnings.push(`조정 이력 af_qty 합 ${anchor.afQty.toLocaleString('ko-KR')} ≠ 장부 역산 ${anchorQty.toLocaleString('ko-KR')} — 장부 역산 값을 사용`);
     }
   }
-  const rawEst = anchorQty + inQty - adjusted;
+  const adjSum = manualAdj.reduce((a, x) => a + x.qty, 0);
+  const rawEst = anchorQty + inQty - adjusted + adjSum;
   let est = rawEst;
   let substituted = 0;
   if (rawEst < 0) {
@@ -348,6 +360,7 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
     for (const d of dateList(since, today)) {
       s += receipts.filter((r) => (r.inDate || r.date) === d).reduce((a, r) => a + r.qty, 0);
       s -= Math.round((usageOverride.daily[d] || 0) * item.factor);
+      s += manualAdj.filter((a) => a.date === d).reduce((a, x) => a + x.qty, 0);
       stockDaily[d] = s;
     }
   }
@@ -359,6 +372,7 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
     lossRate: (cfg.lossRateNote || {})[item.key] || 0,
     count: { date: anchor.date, dtm: anchor.dtm, qty: anchorQty, afQtyRaw: anchor.afQty, adjQty: anchor.adjQty, reason: anchor.reason || '', source: anchorSource },
     receipts: { qty: inQty, list: receipts },
+    ...(manualAdj.length ? { manualAdj: { qty: adjSum, list: manualAdj } } : {}),
     usage: { boxes, adjusted, since, unknownShare, substituted,
       ...(usageOverride ? { basis: 'out_dt', anchorDayRaw: usageOverride.anchorDayRaw, alreadyDeducted: anchor.alreadyDeducted || 0 } : {}) },
     est, rawEst, apiStock: apiStock ? { ...apiStock, expected, diff: expected == null ? null : apiStock.total - expected } : null,
@@ -529,6 +543,7 @@ export async function main() {
       receipts: manual ? receiptsAfterCount(putRows, it, a.date, a.includedReceiptCodes) : receiptsSince(putRows, it, a.dtm),
       daysMap: dailyStore.days, anchorDayUsage: anchorDay, today, apiStock: apiStock[it.key] || null, cfg, weekly,
       usageOverride: manual ? usageSinceManual(dailyStore.regDays, it.key, a, today) : null,
+      manualAdj: adjustmentsAfter(cfg.manualAdjustments, it.key, a),
     });
     r.receiptsDaily = receiptsDailyMap(putRows, it, windowFrom, today);
     return r;

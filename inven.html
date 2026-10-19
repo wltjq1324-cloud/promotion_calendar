@@ -253,7 +253,7 @@ function renderBoxTimeline(d){const host=$('boxTimeline');host.innerHTML='';if(!
     const avgDay=it.weekAvg?it.weekAvg/7:0;
     // 재고: 오늘 = est, 과거는 역산, 미래는 예상
     const stk=new Array(28).fill(null);
-    if(it.stock){const ti=days.indexOf(today);if(ti>=0){stk[ti]=it.est;for(let i=ti-1;i>=0;i--){stk[i]=stk[i+1]+outs[i+1]-ins[i+1]}for(let i=ti+1;i<28;i++){stk[i]=Math.max(0,Math.round(stk[i-1]-avgDay+ins[i]))}
+    if(it.stock){const ti=days.indexOf(today);if(ti>=0){stk[ti]=it.est;const adjD=x=>((it.manualAdj&&it.manualAdj.list)||[]).filter(a=>a.date===x).reduce((s,a)=>s+a.qty,0);for(let i=ti-1;i>=0;i--){stk[i]=stk[i+1]+outs[i+1]-ins[i+1]-adjD(days[i+1])}for(let i=ti+1;i<28;i++){stk[i]=Math.max(0,Math.round(stk[i-1]-avgDay+ins[i]))}
       // 창고 실사 기준점이면 스크립트가 낸 일별 재고(입고=실제 입고일, 출고=출고등록일)를 그대로 쓴다
       if(it.stockDaily)days.forEach((x,i)=>{if(x<=today&&it.stockDaily[x]!=null)stk[i]=it.stockDaily[x]});
       // 조정일 이전은 근거가 없다(조정으로 잔고가 점프) → 비운다
@@ -289,7 +289,7 @@ function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.st
   d.items.forEach(it=>{const b=boxBadge(it,cfg),card=document.createElement('div');card.className='boxcard '+b.cls;
     card.innerHTML=`<div class="t"><span>${it.label} <small>${it.name} · ${it.companyCode}</small></span><span class="badge ${b.cls==='bad'?'bad':b.cls==='warn'?'warn':'good'}">${b.text}</span></div>
       <div class="big">${num(it.est)}</div><div class="sub">실재고 추정 · ${it.daysCover==null?'-':it.daysCover+'일치'} (주 ${num(it.weekAvg)} 사용 기준)</div>
-      <dl><dt>재고 조정 후 잔고 (${it.count.date.slice(5)}${it.count.reason?` · ${it.count.reason}`:''})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd><dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>아워박스 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
+      <dl><dt>재고 조정 후 잔고 (${it.count.date.slice(5)}${it.count.reason?` · ${it.count.reason}`:''})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd>${it.manualAdj?`<dt>${it.manualAdj.qty<0?'−':'+'} 수동 조정 (${it.manualAdj.list.map(a=>a.date.slice(5)).join(', ')})</dt><dd>${num(Math.abs(it.manualAdj.qty))}</dd>`:''}<dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>아워박스 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
       <div class="order">발주 제안 <b>${num(it.orderQty)}</b> <span class="muted">(목표 ${num(it.target)} · 묶음 ${it.bundle})</span></div>${it.daysCover!=null?`<div class="sub" style="margin-top:6px">남은 예상일수 <b>${Math.floor(it.daysCover)}일</b> · 소진 예상 ${(()=>{const x=parseKey((d.generated_at||'').slice(0,10));x.setDate(x.getDate()+Math.floor(it.daysCover));return `${x.getMonth()+1}/${x.getDate()}(${"일월화수목금토"[x.getDay()]})`})()}</div>`:''}
       ${(it.warnings||[]).filter(w=>!w.includes('af_qty')).length?`<ul class="warnlist">${it.warnings.filter(w=>!w.includes('af_qty')).map(w=>`<li>${w}</li>`).join('')}</ul>`:''}`;grid.appendChild(card)});
   renderBoxTimeline(d);renderB2BTimeline(d);
