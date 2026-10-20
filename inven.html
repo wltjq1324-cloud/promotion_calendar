@@ -54,8 +54,14 @@
     .tl td.z{color:#c4c9d1}
     .tl td.in{background:#eaf7ee;color:var(--green);font-weight:900}
     .tl td.stk{font-weight:900}.tl td.stk.low{color:var(--orange)}.tl td.stk.out{color:var(--red);background:#fff1f0}
+    .tl td.madd{background:#e8f1fd;color:#1d5fc4;font-weight:900}
+    .tl td.mdec{background:#fdeeee;color:var(--red);font-weight:900}
+    .tl td[data-note]{position:relative;cursor:help}
+    .tl td[data-note]::after{content:'';position:absolute;top:0;right:0;border-style:solid;border-width:0 6px 6px 0;border-color:transparent #d93025 transparent transparent}
+    .cell-note{position:fixed;z-index:50;pointer-events:none;background:#fffde7;border:1px solid #c9c38a;box-shadow:2px 2px 4px rgba(0,0,0,.18);padding:4px 8px;font-size:12px;font-weight:700;color:#333;white-space:nowrap;display:none}
     .tl td.adj{background:#eef2f7;color:var(--brand-dark);font-weight:900}
     .tl td.today,.tl th.today{background:#fff8dc}
+    .tl td.today.madd{background:#e8f1fd}.tl td.today.mdec{background:#fdeeee}
     .tl td.fut{color:var(--muted);font-style:italic;background:#fbfbfc}.tl td.fut.stk{font-weight:800}
     .tl td.spike{color:var(--red)}
     .tl-note{padding:6px 8px;font-size:11px;color:var(--muted);font-weight:700;border-top:1px solid var(--line);background:#fafbfc}
@@ -236,6 +242,9 @@ function applyBoxCollapsed(){const on=boxCollapsed();$('boxStock').classList.tog
 function toggleBoxStock(){try{localStorage.setItem(BOX_COLLAPSED_KEY,boxCollapsed()?'0':'1')}catch(e){}applyBoxCollapsed()}
 function boxBadge(it,cfg){if(it.est<=0)return {cls:'bad',text:'결품 위험'};const lt=(cfg.leadTimeDays||7)+(cfg.reviewDays||7);if(it.daysCover!=null&&it.daysCover<lt)return {cls:'warn',text:`${lt}일치 미만`};return {cls:'',text:'안정'}}
 // 4주 타임라인(3주 전 일요일 ~ 이번 주 토요일): 박스별 입고 / 출고 / 재고(추정). 오늘 이후는 최근 4주 일평균으로 예상.
+(function(){const tip=document.createElement('div');tip.className='cell-note';document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(tip));if(document.body)document.body.appendChild(tip);
+  document.addEventListener('mouseover',e=>{const td=e.target.closest&&e.target.closest('td[data-note]');if(!td){tip.style.display='none';return}const r=td.getBoundingClientRect();tip.textContent=td.dataset.note;tip.style.display='block';tip.style.left=Math.min(r.right+4,innerWidth-tip.offsetWidth-4)+'px';tip.style.top=Math.max(4,r.top-2)+'px'});
+  document.addEventListener('touchstart',e=>{const td=e.target.closest&&e.target.closest('td[data-note]');if(!td){tip.style.display='none';return}const r=td.getBoundingClientRect();tip.textContent=td.dataset.note;tip.style.display='block';tip.style.left=Math.max(4,Math.min(r.left,innerWidth-tip.offsetWidth-4))+'px';tip.style.top=(r.bottom+4)+'px'},{passive:true})})();
 function renderBoxTimeline(d){const host=$('boxTimeline');host.innerHTML='';if(!d||d.status!=='ok'||!Array.isArray(d.items))return;
   const DOW=['일','월','화','수','목','금','토'],cfg=d.config||{};
   const today=(d.generated_at||'').slice(0,10);if(!today)return;
@@ -259,7 +268,14 @@ function renderBoxTimeline(d){const host=$('boxTimeline');host.innerHTML='';if(!
       // 조정일 이전은 근거가 없다(조정으로 잔고가 점프) → 비운다
       const ai=days.indexOf(it.count&&it.count.date);if(ai>=0)for(let i=0;i<ai;i++)stk[i]=null}}
     const lowAt=(cfg.leadTimeDays||7)*avgDay;
-    h+=`<tr class="grp"><td class="lab">${it.label}${it.stock?'':' <span class="muted">(사용량만)</span>'} · 입고</td>`+days.map((x,i)=>{const v=it.stock?ins[i]:0;const c=(x===today?'today ':'')+(x>today?'fut ':'')+(v?'in':'z');return `<td class="${c}">${v?num(v):(it.stock?'·':'')}</td>`}).join('')+'</tr>';
+    // 수동 재고조정: 더한 것은 입고행에 파란색, 뺀 것은 차감행에. 마우스를 올리면 메모(엑셀 셀 메모처럼)
+    const madj=(it.manualAdj&&it.manualAdj.list)||[],adjOn=(x,sg)=>madj.filter(a=>a.date===x&&Math.sign(a.qty)===sg).reduce((s,a)=>s+a.qty,0);
+    const adjNote=x=>{const [,m,dd]=x.split('-');return `${Number(m)}.${Number(dd)} 재고조정`};
+    h+=`<tr class="grp"><td class="lab">${it.label}${it.stock?'':' <span class="muted">(사용량만)</span>'} · 입고</td>`+days.map((x,i)=>{const v=it.stock?ins[i]:0,a=it.stock?adjOn(x,1):0;const base=(x===today?'today ':'')+(x>today?'fut ':'');
+      if(a&&!v)return `<td class="${base}madd" data-note="${adjNote(x)}">${num(a)}</td>`;
+      if(a)return `<td class="${base}in" data-note="${adjNote(x)}">${num(v)} <span style="color:#1d5fc4">+${num(a)}</span></td>`;
+      return `<td class="${base}${v?'in':'z'}">${v?num(v):(it.stock?'·':'')}</td>`}).join('')+'</tr>';
+    if(it.stock)h+=`<tr><td class="lab">${it.label} · 차감</td>`+days.map(x=>{const a=-adjOn(x,-1);const base=(x===today?'today ':'')+(x>today?'fut ':'');return a?`<td class="${base}mdec" data-note="${adjNote(x)}">${num(a)}</td>`:`<td class="${base}z">·</td>`}).join('')+'</tr>';
     const wkavg=days.map((x,i)=>{const w=Math.floor(i/7);const seg=outs.slice(w*7,w*7+7).filter((_,j)=>days[w*7+j]<=today);return seg.length?seg.reduce((a,b)=>a+b,0)/seg.length:0});
     h+=`<tr><td class="lab">${it.label} · 출고</td>`+days.map((x,i)=>{const v=outs[i];const spike=v&&wkavg[i]>0&&v>=wkavg[i]*2;const c=(x===today?'today ':'')+(x>today?'fut ':'')+(v?'':'z')+(spike?' spike':'');const bg=v&&x<=today?`style="background:rgba(23,107,135,${(0.06+0.34*v/maxOut).toFixed(2)})"`:'';return `<td class="${c}" ${bg}>${x>today?'':(v?num(v):'0')}</td>`}).join('')+'</tr>';
     if(it.stock)h+=`<tr><td class="lab">${it.label} · 재고</td>`+days.map((x,i)=>{const v=stk[i];if(v==null)return `<td class="z ${x===today?'today':''}">–</td>`;const isAdj=it.count&&x===it.count.date;const c=(x===today?'today ':'')+(x>today?'fut ':'')+'stk'+(v<=0?' out':v<lowAt?' low':'')+(isAdj?' adj':'');return `<td class="${c}" title="${isAdj?'재고 조정 후 잔고 '+num(it.count.qty)+(it.count.reason?' · '+it.count.reason:''):(x>today?'예상(일평균 '+Math.round(avgDay)+' 기준)':'')}">${num(v)}${isAdj?'<small> 조정</small>':''}</td>`}).join('')+'</tr>';
@@ -289,7 +305,7 @@ function renderBoxStock(){const box=$('boxStock'),d=state.boxStock;if(!d){box.st
   d.items.forEach(it=>{const b=boxBadge(it,cfg),card=document.createElement('div');card.className='boxcard '+b.cls;
     card.innerHTML=`<div class="t"><span>${it.label} <small>${it.name} · ${it.companyCode}</small></span><span class="badge ${b.cls==='bad'?'bad':b.cls==='warn'?'warn':'good'}">${b.text}</span></div>
       <div class="big">${num(it.est)}</div><div class="sub">실재고 추정 · ${it.daysCover==null?'-':it.daysCover+'일치'} (주 ${num(it.weekAvg)} 사용 기준)</div>
-      <dl><dt>재고 조정 후 잔고 (${it.count.date.slice(5)}${it.count.reason?` · ${it.count.reason}`:''})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd>${it.manualAdj?`<dt>${it.manualAdj.qty<0?'−':'+'} 수동 조정 (${it.manualAdj.list.map(a=>a.date.slice(5)).join(', ')})</dt><dd>${num(Math.abs(it.manualAdj.qty))}</dd>`:''}<dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>아워박스 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
+      <dl><dt>재고 조정 후 잔고 (${it.count.date.slice(5)}${it.count.reason?` · ${it.count.reason}`:''})</dt><dd>${num(it.count.qty)}</dd><dt>+ 이후 입고</dt><dd>${num(it.receipts.qty)}</dd><dt>− 이후 출고 박스${it.factor!==1?` ×${it.factor}`:''}</dt><dd>${it.factor!==1?`${num(it.usage.boxes)} → ${num(it.usage.adjusted)}`:num(it.usage.boxes)}</dd><dt>아워박스 장부재고</dt><dd>${it.apiStock?num(it.apiStock.total):'-'}</dd>${it.usage.substituted?`<dt>대체 포장 추정</dt><dd class="muted">${num(it.usage.substituted)}</dd>`:''}</dl>
       <div class="order">발주 제안 <b>${num(it.orderQty)}</b> <span class="muted">(목표 ${num(it.target)} · 묶음 ${it.bundle})</span></div>${it.daysCover!=null?`<div class="sub" style="margin-top:6px">남은 예상일수 <b>${Math.floor(it.daysCover)}일</b> · 소진 예상 ${(()=>{const x=parseKey((d.generated_at||'').slice(0,10));x.setDate(x.getDate()+Math.floor(it.daysCover));return `${x.getMonth()+1}/${x.getDate()}(${"일월화수목금토"[x.getDay()]})`})()}</div>`:''}
       ${(it.warnings||[]).filter(w=>!w.includes('af_qty')).length?`<ul class="warnlist">${it.warnings.filter(w=>!w.includes('af_qty')).map(w=>`<li>${w}</li>`).join('')}</ul>`:''}`;grid.appendChild(card)});
   renderBoxTimeline(d);renderB2BTimeline(d);
