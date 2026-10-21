@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-21 08:46:41",
+ "generated_at": "2026-10-21 10:24:33",
  "source": "ourbox-openapi",
  "api_calls": 85,
  "fetched_days": 9,
- "elapsed_ms": 78836,
+ "elapsed_ms": 78056,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -111,7 +111,7 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 1446,
+    "afQtyRaw": 0,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
@@ -170,7 +170,7 @@
    "orderQty": 760,
    "daysCover": 8.2,
    "warnings": [
-    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
@@ -881,7 +881,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-21 08:46:41"
+   "fetchedAt": "2026-10-21 10:24:33"
   },
   {
    "date": "2026-09-19",
@@ -1525,7 +1525,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-21 08:46:41"
+   "fetchedAt": "2026-10-21 10:24:33"
   },
   {
    "date": "2026-10-07",
@@ -2088,7 +2088,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-21 08:46:41"
+   "fetchedAt": "2026-10-21 10:24:33"
   },
   {
    "date": "2026-10-20",
@@ -2158,7 +2158,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-21 08:46:41"
+   "fetchedAt": "2026-10-21 10:24:33"
   },
   {
    "date": "2026-10-21",
@@ -2179,7 +2179,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-21 08:46:41"
+   "fetchedAt": "2026-10-21 10:24:33"
   }
  ],
  "warnings": []
