@@ -3,7 +3,11 @@ name: Update OurBox inventory
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'
+    # 매일 07:50 KST (= 22:50 UTC 전날) — 업무 시작 전에 최신 재고를 받아 둔다.
+    # GitHub 예약 실행은 수십 분 밀리거나 빠질 수 있어 08:30 KST(23:30 UTC)에 보완 실행.
+    # 보완 실행은 오늘 07:00 이후 스냅샷이 이미 있으면 아무것도 하지 않는다.
+    - cron: '50 22 * * *'
+    - cron: '30 23 * * *'
   push:
     paths:
       - '.github/workflows/update-inventory.yml'
@@ -12,6 +16,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: inventory
+  cancel-in-progress: false
+
 jobs:
   update-inventory:
     runs-on: windows-latest
@@ -19,7 +27,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Skip backup run if already updated this morning
+        id: guard
+        if: github.event_name == 'schedule' && github.event.schedule == '30 23 * * *'
+        shell: pwsh
+        run: |
+          $kst = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), [System.TimeZoneInfo]::FindSystemTimeZoneById('Korea Standard Time'))
+          $raw = Get-Content inventory-latest.json -Raw
+          $m = [regex]::Match($raw, '"generated_at"\s*:\s*"([^"]+)"')
+          if ($m.Success -and $m.Groups[1].Value -ge ($kst.ToString('yyyy-MM-dd') + ' 07:00')) {
+            Write-Host "오늘 아침 스냅샷이 이미 있음($($m.Groups[1].Value)) — 건너뜀"
+            "skip=true" >> $env:GITHUB_OUTPUT
+          }
+
       - name: Fetch latest inventory
+        if: steps.guard.outputs.skip != 'true'
         shell: pwsh
         env:
           OURBOX_API_ACCESS_KEY: ${{ secrets.OURBOX_API_ACCESS_KEY }}
@@ -27,6 +49,7 @@ jobs:
         run: ./scripts/update-inventory.ps1
 
       - name: Commit inventory snapshot
+        if: steps.guard.outputs.skip != 'true'
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
@@ -36,5 +59,11 @@ jobs:
             Write-Host "No inventory changes."
           } else {
             git commit -m "chore: update inventory snapshot"
-            git push
+            # box-stock 워크플로도 main에 커밋하므로 밀렸으면 rebase 후 재시도
+            for ($i = 1; $i -le 4; $i++) {
+              git pull --rebase origin main
+              git push origin HEAD:main
+              if ($LASTEXITCODE -eq 0) { break }
+              Start-Sleep -Seconds (5 * $i)
+            }
           }

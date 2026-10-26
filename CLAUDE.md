@@ -9,7 +9,7 @@
 | `index.html` | 프로모션 운영 캘린더. 서버는 Apps Script 웹앱(`scripts/promotion-api.gs` 백업본) |
 | `calendar-base.html` | 옛 캘린더 사본 → `index.html` 로 자동 이동만 한다(같은 서버에 저장되는 옛 화면이 쓰이지 않게) |
 | `inven.html` (`/inven`) | SKU별 재고 현황 + **박스 실재고(근사치)** 섹션. 접속 코드 게이트(`ACCESS_CODES`) |
-| `inventory-latest.json` | 아워박스 재고 스냅샷. `update-inventory` 워크플로가 30분마다 갱신(`scripts/update-inventory.ps1`) |
+| `inventory-latest.json` | 아워박스 재고 스냅샷. `update-inventory` 워크플로가 매일 07:50 KST 갱신, 08:30 보완 실행(이미 받았으면 건너뜀) (`scripts/update-inventory.ps1`). 2026-10-27 전엔 30분 주기였으나 GitHub가 3~5시간 간격으로만 돌려 아침에 새벽 4시대 값이 보였음 |
 | `box-stock-latest.json`, `box-daily.json` | 박스 실재고 결과·일별 출고 캐시. `update-box-stock` 워크플로가 매일 08:00 KST 갱신 |
 | `scripts/box-stock.mjs` | 박스 실재고 계산(순수 함수 export). 테스트 `node scripts/box-stock.test.js` |
 | `box-stock-config.json` | 품목 코드·묶음·리드타임(7일)·검토주기(7일)·안전재고율(0.2)·룩업 오버라이드·1회 재수집 플래그 |

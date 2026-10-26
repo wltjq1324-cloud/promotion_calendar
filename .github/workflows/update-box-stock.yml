@@ -51,7 +51,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: update box stock snapshot"
-          # inventory 워크플로가 30분마다 main에 커밋하므로 밀렸으면 rebase 후 재시도
+          # inventory 워크플로도 main에 커밋하므로 밀렸으면 rebase 후 재시도
           for i in 1 2 3 4; do
             if git push; then exit 0; fi
             echo "push failed, rebasing (try $i)"
