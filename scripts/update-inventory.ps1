@@ -105,12 +105,55 @@ do {
   $page += 1
 } while ($page -le $totalPage)
 
+# 입고 이력(입고일자) — 상품 재고 API에는 입고일이 없어 입고실적(put_perf)을 따로 받는다.
+# 7일 창 제한이라 최근 receiptDays 일을 7일씩 나눠 조회. 실패해도 재고 스냅샷은 그대로 쓴다.
+$receiptDays = 400
+$receipts = New-Object System.Collections.Generic.List[object]
+$receiptFields = @()
+$receiptError = ''
+$stockCodes = @{}
+foreach ($it in $items) { $stockCodes[[string]$it.company_code] = $true; $stockCodes[[string]$it.product_code] = $true }
+try {
+  $todayKst = [datetime]::ParseExact($generatedAt.Substring(0, 10), 'yyyy-MM-dd', $null)
+  for ($s = $todayKst.AddDays(-$receiptDays); $s -le $todayKst; $s = $s.AddDays(7)) {
+    $e = $s.AddDays(6); if ($e -gt $todayKst) { $e = $todayKst }
+    $rp = 1; $rtotal = 1
+    do {
+      $rbody = @{ input_dt_type = '3'; input_dt_from = $s.ToString('yyyy-MM-dd'); input_dt_to = $e.ToString('yyyy-MM-dd'); page = $rp } | ConvertTo-Json -Compress
+      $rres = Invoke-RestMethod -Uri 'https://api.ourbox.co.kr/api/wms/put/put_perf' -Method Post -Headers $headers -Body $rbody
+      if (-not $rres.result) { throw "put_perf ${s}: $($rres.message)" }
+      $rtotal = [int]$rres.total_page; if ($rtotal -lt 1) { $rtotal = 1 }
+      foreach ($r in @($rres.datas)) {
+        if ($null -eq $r) { continue }
+        if (-not $receiptFields.Count) { $receiptFields = @($r.PSObject.Properties.Name) }
+        if (-not ($stockCodes.ContainsKey([string]$r.product_company_code) -or $stockCodes.ContainsKey([string]$r.product_code))) { continue }
+        $row = [ordered]@{}
+        foreach ($pr in $r.PSObject.Properties) {
+          if ($pr.Name -match '^(input_dt|input_complete_dt|input_qty|input_code|product_code|product_company_code)$' -or $pr.Name -match 'expir|valid|make|manuf|lot|bat|dist|use_|limit') {
+            $row[$pr.Name] = [string]$pr.Value
+          }
+        }
+        $receipts.Add($row) | Out-Null
+      }
+      $rp += 1
+      Start-Sleep -Milliseconds 200
+    } while ($rp -le $rtotal -and $rp -le 20)
+  }
+} catch {
+  $receiptError = $_.Exception.Message
+  Write-Host "입고 이력 조회 실패(재고는 정상 저장): $receiptError"
+}
+
 $payload = [ordered]@{
   generated_at = $generatedAt
   response_date = $responseDate
   source = 'ourbox-product-stock-detail'
   total_count = $items.Count
   items = $items
+  receipts = $receipts
+  receipt_fields = $receiptFields
+  receipt_days = $receiptDays
+  receipt_error = $receiptError
 }
 
 $json = $payload | ConvertTo-Json -Depth 8 -Compress
