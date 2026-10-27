@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-10-27 08:10:28",
+ "generated_at": "2026-10-27 10:55:13",
  "source": "ourbox-openapi",
  "api_calls": 70,
  "fetched_days": 9,
- "elapsed_ms": 60821,
+ "elapsed_ms": 72055,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -38,7 +38,7 @@
     "source": "manual"
    },
    "receipts": {
-    "qty": 3744,
+    "qty": 5760,
     "list": [
      {
       "date": "2026-10-16",
@@ -51,6 +51,12 @@
       "inDate": "2026-10-21",
       "qty": 1728,
       "code": "12146"
+     },
+     {
+      "date": "2026-10-27",
+      "inDate": "2026-10-27",
+      "qty": 2016,
+      "code": "12318"
      }
     ]
    },
@@ -64,11 +70,11 @@
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 433,
-   "rawEst": 433,
+   "est": 2449,
+   "rawEst": 2449,
    "apiStock": {
-    "total": 8264,
-    "available": 8264,
+    "total": 10280,
+    "available": 10280,
     "unavailable": 0,
     "expected": null,
     "diff": null
@@ -95,19 +101,20 @@
     "2026-10-24": 837,
     "2026-10-25": 792,
     "2026-10-26": 441,
-    "2026-10-27": 433
+    "2026-10-27": 2449
    },
    "weekAvg": 1686,
    "weekMax8": 3077,
    "target": 4046,
-   "orderQty": 3672,
-   "daysCover": 1.8,
+   "orderQty": 1656,
+   "daysCover": 10.2,
    "warnings": [],
    "receiptsDaily": {
     "2026-09-16": 3240,
     "2026-09-23": 2376,
     "2026-10-07": 2016,
     "2026-10-16": 2016,
+    "2026-10-27": 2016,
     "2026-10-21": 1728
    }
   },
@@ -124,13 +131,13 @@
     "date": "2026-09-18",
     "dtm": "2026-09-18 18:59:47",
     "qty": 2482,
-    "afQtyRaw": 1446,
+    "afQtyRaw": 0,
     "adjQty": -3064,
     "reason": "직접입력",
     "source": "ledger_identity"
    },
    "receipts": {
-    "qty": 3080,
+    "qty": 4020,
     "list": [
      {
       "date": "2026-09-23",
@@ -146,6 +153,11 @@
       "date": "2026-10-21",
       "qty": 1140,
       "code": "12146"
+     },
+     {
+      "date": "2026-10-27",
+      "qty": 940,
+      "code": "12318"
      }
     ]
    },
@@ -173,27 +185,28 @@
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1065,
-   "rawEst": 1065,
+   "est": 2005,
+   "rawEst": 2005,
    "apiStock": {
-    "total": 5562,
-    "available": 5562,
+    "total": 6502,
+    "available": 6502,
     "unavailable": 0,
-    "expected": 5562,
+    "expected": 6502,
     "diff": 0
    },
    "weekAvg": 748,
    "weekMax8": 1262,
    "target": 1795,
-   "orderQty": 740,
-   "daysCover": 10,
+   "orderQty": 0,
+   "daysCover": 18.8,
    "warnings": [
-    "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
+    "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
    "receiptsDaily": {
     "2026-09-16": 2000,
     "2026-09-23": 1000,
     "2026-10-16": 940,
+    "2026-10-27": 940,
     "2026-10-21": 1140
    }
   },
@@ -615,7 +628,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-27 08:10:28"
+   "fetchedAt": "2026-10-27 10:55:13"
   },
   {
    "date": "2026-09-19",
@@ -1259,7 +1272,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-27 08:10:28"
+   "fetchedAt": "2026-10-27 10:55:13"
   },
   {
    "date": "2026-10-07",
@@ -2113,7 +2126,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-27 08:10:28"
+   "fetchedAt": "2026-10-27 10:55:13"
   },
   {
    "date": "2026-10-26",
@@ -2151,19 +2164,36 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-27 08:10:28"
+   "fetchedAt": "2026-10-27 10:55:13"
   },
   {
    "date": "2026-10-27",
    "invoices": 195,
-   "lines": 259,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
+   "lines": 262,
+   "noInvoiceGroups": 3,
+   "noInvoiceQty": 624,
    "unknown": 0,
    "byLookup": 187,
    "byQty": 8,
    "unknownSigs": [],
-   "b2b": [],
+   "b2b": [
+    {
+     "code": "G-O095",
+     "name": "치즈감자빵(5개입)",
+     "qty": 528,
+     "ch": [
+      "밭(파머스베이크샵)"
+     ]
+    },
+    {
+     "code": "G-O025",
+     "name": "오리지널(5개입)",
+     "qty": 96,
+     "ch": [
+      "밭(파머스베이크샵)"
+     ]
+    }
+   ],
    "b1": 106,
    "b2": 33,
    "b3": 2,
@@ -2172,7 +2202,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-27 08:10:28"
+   "fetchedAt": "2026-10-27 10:55:13"
   }
  ],
  "warnings": []
