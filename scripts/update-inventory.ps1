@@ -129,7 +129,7 @@ try {
         if (-not ($stockCodes.ContainsKey([string]$r.product_company_code) -or $stockCodes.ContainsKey([string]$r.product_code))) { continue }
         $row = [ordered]@{}
         foreach ($pr in $r.PSObject.Properties) {
-          if ($pr.Name -match '^(input_dt|input_complete_dt|input_qty|input_code|product_code|product_company_code)$' -or $pr.Name -match 'expir|valid|make|manuf|lot|bat|dist|use_|limit') {
+          if ($pr.Name -match '^(input_dt|input_complete_dt|input_qty|input_code|product_code|product_company_code)$' -or $pr.Name -match 'expir|valid|life|make|manuf|lot|bat|dist|use_|limit') {
             $row[$pr.Name] = [string]$pr.Value
           }
         }
