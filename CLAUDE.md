@@ -8,15 +8,15 @@
 |---|---|
 | `index.html` | 프로모션 운영 캘린더. 서버는 Apps Script 웹앱(`scripts/promotion-api.gs` 백업본) |
 | `calendar-base.html` | 옛 캘린더 사본 → `index.html` 로 자동 이동만 한다(같은 서버에 저장되는 옛 화면이 쓰이지 않게) |
-| `inven-v2.html` (`/inven-v2`) | **비교용**: 출고를 아워박스 실출고(`sku-daily.json`, 재고 SKU별·출고완료일, 택배/대량 분리)로 계산. 존 대조 후 이상 없으면 `inven.html`에 덮어쓴다. 송장 없는 행 중 채널명에 "택배"(롯데홈쇼핑-직택배)는 택배로, 나머지(밭(파머스베이크샵) 차량출고)는 대량출고 |
-| `inven-2.html` | `/inven-2` 오타로 들어와도 `inven-v2`로 이동만 하는 페이지 |
-| `inven.html` (`/inven`) | SKU별 재고 현황 + **박스 실재고(근사치)** 섹션. 접속 코드 게이트(`ACCESS_CODES`). 행을 누르면 로트(소비기한)별 모달: 입고일자는 스냅샷 `receipts`(put_perf 400일)의 `life_dt`=소비기한으로 매칭, 선입선출+14일 일평균으로 기한 내 소진 어려운 수량을 '소비기한 위험'으로 표시 |
+| `inven-v2.html`, `inven-2.html` | 옛 비교용 주소 → `/inven` 으로 이동만 한다(2026-10-28 v2를 /inven에 반영) |
+| `inven.html` (`/inven`) | SKU별 재고 현황 + **박스 실재고(근사치)** 섹션. 접속 코드 게이트(`ACCESS_CODES`). **출고 = 아워박스 실출고**(`sku-daily.json`, 상품코드별·출고완료일, 전날까지): 7/14/30일·일평균은 택배만(송장 없는 롯데홈쇼핑-직택배 포함), 잔여일 = 가용 ÷ (14일 택배 ÷ 14), 21일 미만 경고. 대량출고(송장 없는 차량 출고, 밭(파머스베이크샵))는 평균에 안 넣고 실제 출고일·수량만 표시. `sku_mapping`은 보조(프로모션 품목명이 재고명과 다를 때만, 못 읽어도 계속). 행 클릭 → 로트(소비기한·입고일자) 모달 + 최근 14일 택배/대량 일별 + 대량출고 내역 |
 | `inventory-latest.json` | 아워박스 재고 스냅샷. `update-inventory` 워크플로가 매일 07:50 KST 갱신, 08:30 보완 실행(이미 받았으면 건너뜀) (`scripts/update-inventory.ps1`). 2026-10-27 전엔 30분 주기였으나 GitHub가 3~5시간 간격으로만 돌려 아침에 새벽 4시대 값이 보였음 |
 | `box-stock-latest.json`, `box-daily.json` | 박스 실재고 결과·일별 출고 캐시. `update-box-stock` 워크플로가 매일 08:00 KST 갱신 |
 | `scripts/box-stock.mjs` | 박스 실재고 계산(순수 함수 export). 테스트 `node scripts/box-stock.test.js` |
 | `box-stock-config.json` | 품목 코드·묶음·리드타임(7일)·검토주기(7일)·안전재고율(0.2)·룩업 오버라이드·1회 재수집 플래그 |
 | `box-lookup.json` | 송장 내용물 서명(`업체품목코드x수량\|…`) → 박스 종류. OMS 엑셀 49,799송장(2026-05~09)에서 생성 |
-| `scripts/velocity-cache.gs`, `sku-sync.gs`, `sku-mapping-assistant.gs` | 시트 "*OURBOX_프로모션_운영_DB" 쪽 Apps Script 백업본 |
+| `sku-daily.json` | 재고 상품코드별 일출고 `{date, parcel, bulk, bulkCh}` 35일. box-stock 워크플로가 같은 `out_perf_period` 응답으로 함께 만든다. 키는 **상품코드**(업체품목코드는 같은 상품도 바뀜: 고구마빵 3개입 재고 G-O032 / 출고 G-O151) |
+| `scripts/velocity-cache.gs`, `sku-sync.gs`, `sku-mapping-assistant.gs` | 시트 "*OURBOX_프로모션_운영_DB" 쪽 Apps Script 백업본. 2026-10-28부터 화면 출고 계산에 안 쓴다(트리거가 남아 있어도 무해) |
 
 ## 박스 실재고 계산 규칙 (2026-09-18 확정)
 
