@@ -190,12 +190,13 @@ const eq = (name, got, want) => {
       { invoice: '112', product_company_code: 'G-O022', out_qty: 1 },
       { invoice: '113', product_company_code: 'G-O022', out_qty: 1 },           // 세트 송장: 구성품 행 단위
       { invoice: '113', product_company_code: 'G-O094', out_qty: 2 },
-      { invoice: '', out_data_sno: 'B1', product_company_code: 'G-O022', out_qty: 500 }, // 벌크
+      { invoice: '', out_data_sno: 'B1', product_company_code: 'G-O022', out_qty: 500, mall_name: '밭(파머스베이크샵)' }, // 벌크
+      { invoice: '', out_data_sno: 'H1', product_company_code: 'G-O034', out_qty: 3, mall_name: '롯데홈쇼핑-직택배(일반)' }, // 홈쇼핑 직택배(송장 없음)
     ];
     const day = m.aggregateDay('2026-10-27', rows, lookup);
-    eq('택배는 SKU별로 합산(세트 송장은 구성품별)', day.parcel, { 'G-O034': 2, 'G-O022': 2, 'G-O094': 2 });
+    eq('택배는 SKU별로 합산(세트 송장은 구성품별, 직택배 포함)', day.parcel, { 'G-O034': 5, 'G-O022': 2, 'G-O094': 2 });
     const sd = m.skuDaily({ '2026-10-27': day }, '2026-10-28', 'now', 3);
-    eq('벌크는 bulk 로 분리', sd.days.find((d) => d.date === '2026-10-27').bulk, { 'G-O022': 500 });
+    eq('벌크만 bulk 로 분리(직택배 제외)', sd.days.find((d) => d.date === '2026-10-27').bulk, { 'G-O022': 500 });
     eq('없는 날은 missing, 오늘은 partial', sd.days.map((d) => [d.date, d.missing, !!d.partial]),
       [['2026-10-26', true, false], ['2026-10-27', false, false], ['2026-10-28', true, true]]);
   }

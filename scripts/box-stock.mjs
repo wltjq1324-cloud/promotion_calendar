@@ -104,7 +104,7 @@ export function classifyInvoice(lines, lookup, date = '') {
 
 export function emptyDay(date) {
   const d = { date, invoices: 0, lines: 0, noInvoiceGroups: 0, noInvoiceQty: 0,
-    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [], parcel: {} };
+    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [], parcel: {}, directParcel: {} };
   for (const k of BOX_KEYS) d[k] = 0;
   return d;
 }
@@ -118,6 +118,8 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
   const b2b = new Map();
   // 송장 있는 행 = 택배 출고. 재고 SKU(업체품목코드)별 수량 → /inven 실출고(sku-daily.json)
   const parcel = {};
+  // 송장 없는 행 중 홈쇼핑 '직택배' 채널은 판매처가 송장을 따로 붙이는 택배 출고다(벌크 아님, 2026-10-28 실측: 롯데홈쇼핑-직택배(일반)).
+  const directParcel = {};
   for (const r of Array.isArray(datas) ? datas : []) {
     day.lines += 1;
     const line = {
@@ -135,6 +137,10 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
       const ch = text(r.mall_name || r.channel);
       if (ch && !e.ch.includes(ch)) e.ch.push(ch);
       b2b.set(bk, e);
+      if (/택배/.test(ch)) {
+        parcel[bk] = (parcel[bk] || 0) + line.qty;
+        directParcel[bk] = (directParcel[bk] || 0) + line.qty;
+      }
       continue;
     }
     const pk = line.code || line.productCode;
@@ -164,6 +170,7 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
   day.noInvoiceQty = [...noInvoice.values()].reduce((s, q) => s + q, 0);
   day.b2b = [...b2b.values()].sort((a, b) => b.qty - a.qty);
   day.parcel = parcel;
+  day.directParcel = directParcel;
   day.unknownSigs = [...unknownSigs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([sig, n]) => `${sig} ×${n}`);
   return day;
@@ -175,8 +182,12 @@ export function skuDaily(days, today, now, n = SKU_DAILY_DAYS) {
   const list = dateList(addDays(today, -(n - 1)), today).map((d) => {
     const rec = days[d];
     const bulk = {};
-    for (const e of (rec && rec.b2b) || []) bulk[e.code] = (bulk[e.code] || 0) + e.qty;
-    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, missing: !(rec && rec.parcel), ...(d === today ? { partial: true } : {}) };
+    const direct = (rec && rec.directParcel) || {};
+    for (const e of (rec && rec.b2b) || []) {
+      const q = e.qty - (direct[e.code] || 0);
+      if (q > 0) bulk[e.code] = (bulk[e.code] || 0) + q;
+    }
+    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, direct, missing: !(rec && rec.parcel && rec.directParcel), ...(d === today ? { partial: true } : {}) };
   });
   return { generated_at: now, basis: 'out_complete_dt', source: 'ourbox out_perf_period', days: list };
 }
@@ -520,7 +531,7 @@ export async function main() {
     const cached = dailyStore.days[d];
     const isAnchorDay = Object.values(anchors).some((a) => a.date === d);
     // SKU별 택배 집계(parcel)가 없는 최근 SKU_DAILY_DAYS 일은 한 번 다시 받는다(2026-10-28 추가)
-    const needParcel = !(cached && cached.parcel) && d >= addDays(today, -SKU_DAILY_DAYS);
+    const needParcel = !(cached && cached.parcel && cached.directParcel) && d >= addDays(today, -SKU_DAILY_DAYS);
     if (cached && Array.isArray(cached.b2b) && !needParcel && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
     const datas = await fetchPages('/api/wms/out/out_perf_period',
       { out_dt_type: '2', out_dt_from: d, out_dt_to: d }, 'datas', k, cfg, cfg.maxPagesPerDay);
@@ -570,7 +581,7 @@ export async function main() {
     return r;
   });
   const dailyOut = dateList(addDays(today, -(cfg.outputDailyDays - 1)), today)
-    .map((d) => { const { parcel, ...rest } = dailyStore.days[d] || emptyDay(d); return rest; });
+    .map((d) => { const { parcel, directParcel, ...rest } = dailyStore.days[d] || emptyDay(d); return rest; });
   const win = dailyOut.filter((d) => d.invoices);
   const invSum = win.reduce((s, d) => s + d.invoices, 0) || 1;
   const coverage = {
