@@ -282,13 +282,17 @@ function renderB2BTimeline(d){const host=$('boxB2B');host.innerHTML='';if(!d||d.
   const today=(d.generated_at||'').slice(0,10);if(!today)return;
   const tD=parseKey(today),ws=new Date(tD);ws.setDate(ws.getDate()-ws.getDay()-21);const days=[];for(let i=0;i<28;i++){const x=new Date(ws);x.setDate(x.getDate()+i);days.push(toKey(x))}
   const W=['일','월','화','수','목','금','토'],dm=new Map((d.daily||[]).map(x=>[x.date,x]));
-  const items=new Map();days.forEach((x,i)=>{const r=dm.get(x);((r&&r.b2b)||[]).forEach(e=>{const it=items.get(e.code)||{code:e.code,name:e.name||e.code,ch:new Set(),q:new Array(28).fill(0),tot:0};it.q[i]+=e.qty;it.tot+=e.qty;(e.ch||[]).forEach(c=>it.ch.add(c));items.set(e.code,it)})});
+  // 대량출고는 아래 상품 목록과 같은 sku-daily.json(bulk: 송장 없는 차량 출고, 직택배 제외)을 쓴다. 못 읽었을 때만 박스 데이터(b2b).
+  const items=new Map(),sd=new Map(((state.skuDaily&&state.skuDaily.days)||[]).filter(x=>!x.missing).map(x=>[x.date,x]));
+  const nameOf=code=>{const inv=state.inventory.find(r=>r.product_code===code||r.company_code===code);if(inv)return inv.product_name;for(const r of dm.values()){const e=(r.b2b||[]).find(e=>e.productCode===code||e.code===code);if(e&&e.name)return e.name}return code};
+  if(sd.size)days.forEach((x,i)=>{const r=sd.get(x);Object.entries((r&&r.bulk)||{}).forEach(([code,q])=>{q=Number(q)||0;if(!q)return;const it=items.get(code)||{code,name:nameOf(code),ch:new Set(),q:new Array(28).fill(0),tot:0};it.q[i]+=q;it.tot+=q;((r.bulkCh||{})[code]||[]).forEach(c=>it.ch.add(c));items.set(code,it)})});
+  else days.forEach((x,i)=>{const r=dm.get(x);((r&&r.b2b)||[]).forEach(e=>{const it=items.get(e.code)||{code:e.code,name:e.name||e.code,ch:new Set(),q:new Array(28).fill(0),tot:0};it.q[i]+=e.qty;it.tot+=e.qty;(e.ch||[]).forEach(c=>it.ch.add(c));items.set(e.code,it)})});
   const list=[...items.values()].sort((a,b)=>b.tot-a.tot);
   const totals=days.map((_,i)=>list.reduce((s,it)=>s+it.q[i],0)),maxQ=Math.max(1,...list.flatMap(it=>it.q));
-  let h='<table class="tl"><thead><tr><th class="lab">B2B 출고 (송장 없는 벌크)</th>';
+  let h='<table class="tl"><thead><tr><th class="lab">대량출고 (송장 없는 차량 출고)</th>';
   for(let w=0;w<4;w++){const a=days[w*7],b=days[w*7+6];h+=`<th class="wk" colspan="7">${a.slice(5).replace('-','/')} ~ ${b.slice(5).replace('-','/')}${b>=today&&a<=today?' (금주)':''}</th>`}
   h+='<th class="wk">4주 합계</th></tr><tr><th class="lab">날짜</th>'+days.map(x=>`<th class="${x===today?'today':''}">${x.slice(8)}<br><small>${W[parseKey(x).getDay()]}</small></th>`).join('')+'<th></th></tr></thead><tbody>';
-  if(!list.length){h+=`<tr><td class="lab">최근 4주 B2B 출고 없음</td>${days.map(x=>`<td class="z ${x===today?'today':''}">·</td>`).join('')}<td class="z">0</td></tr>`}
+  if(!list.length){h+=`<tr><td class="lab">최근 4주 대량출고 없음</td>${days.map(x=>`<td class="z ${x===today?'today':''}">·</td>`).join('')}<td class="z">0</td></tr>`}
   else{h+=`<tr class="grp"><td class="lab">전체 · 수량</td>${totals.map((v,i)=>`<td class="${days[i]===today?'today ':''}${days[i]>today?'fut ':''}${v?'stk':'z'}">${days[i]>today?'':(v?num(v):'·')}</td>`).join('')}<td class="stk">${num(totals.reduce((a,b)=>a+b,0))}</td></tr>`;
     list.forEach(it=>{h+=`<tr><td class="lab" title="${it.code}${it.ch.size?' · '+[...it.ch].join(', '):''}">${it.name}</td>${it.q.map((v,i)=>{const x=days[i];const bg=v&&x<=today?`style="background:rgba(23,107,135,${(0.06+0.34*v/maxQ).toFixed(2)})"`:'';return `<td class="${x===today?'today ':''}${x>today?'fut ':''}${v?'':'z'}" ${bg}>${x>today?'':(v?num(v):'·')}</td>`}).join('')}<td class="stk">${num(it.tot)}</td></tr>`})}
   host.innerHTML=h+'</tbody></table>'}
@@ -323,12 +327,15 @@ function currentPromoCodes(){const y=new Date().getFullYear(),m=new Date().getMo
 // 아워박스 출고실적(sku-daily.json, box-stock 워크플로가 매일 08:00 생성) → 재고 SKU별 실출고.
 // 오늘(partial)은 아침 시점이라 미완료라서 빼고, 마지막 완료일 기준 7/14/30일을 센다.
 async function loadSkuDaily(){try{state.skuDaily=await fetchJson('SKU 실출고',`${SKU_DAILY_URL}?t=${Date.now()}`)}catch(err){console.warn('SKU 실출고를 불러오지 못했습니다:',err.message);state.skuDaily=null;state.velocityLoadError=err.message}}
-function computeRealVelocity(){const days=((state.skuDaily&&state.skuDaily.days)||[]).filter(d=>!d.partial&&!d.missing).sort((a,b)=>a.date.localeCompare(b.date));
+// 택배 7/14/30일·일평균은 전날까지 완료분만(오늘은 진행 중). 대량출고는 실제 출고값이라 오늘 것도 그대로 보여 준다(위 대량출고 표와 같은 데이터).
+function computeRealVelocity(){const allDays=((state.skuDaily&&state.skuDaily.days)||[]).filter(d=>!d.missing).sort((a,b)=>a.date.localeCompare(b.date)),days=allDays.filter(d=>!d.partial);
   const latest=days.length?days[days.length-1].date:'';state.realLatestDate=latest;const acc=new Map();if(!latest){state.realVelocity=acc;return}
   const s7=dateKeyFromDays(latest,7),s14=dateKeyFromDays(latest,14),s30=dateKeyFromDays(latest,30);
   const get=c=>{if(!acc.has(c))acc.set(c,{recent7_qty:0,recent14_qty:0,recent30_qty:0,bulk30_qty:0,daily:{}});return acc.get(c)};
   days.forEach(d=>{if(d.date<s30)return;Object.entries(d.parcel||{}).forEach(([c,q])=>{const v=get(c);q=Number(q)||0;if(d.date>=s7)v.recent7_qty+=q;if(d.date>=s14)v.recent14_qty+=q;v.recent30_qty+=q;(v.daily[d.date]=v.daily[d.date]||{p:0,b:0}).p+=q});
-    Object.entries(d.bulk||{}).forEach(([c,q])=>{const v=get(c);q=Number(q)||0;v.bulk30_qty+=q;if(q>0)(v.bulk_events=v.bulk_events||[]).push({date:d.date,qty:q,ch:((d.bulkCh||{})[c]||[]).join(', ')});(v.daily[d.date]=v.daily[d.date]||{p:0,b:0}).b+=q})});
+    });
+  const lastAny=allDays.length?allDays[allDays.length-1].date:latest,b30=dateKeyFromDays(lastAny,30);
+  allDays.forEach(d=>{if(d.date<b30)return;Object.entries(d.bulk||{}).forEach(([c,q])=>{const v=get(c);q=Number(q)||0;v.bulk30_qty+=q;if(q>0)(v.bulk_events=v.bulk_events||[]).push({date:d.date,qty:q,ch:((d.bulkCh||{})[c]||[]).join(', '),partial:!!d.partial});(v.daily[d.date]=v.daily[d.date]||{p:0,b:0}).b+=q})});
   acc.forEach(v=>{v.avg14_daily=v.recent14_qty/14});state.realVelocity=acc;state.realDays=days.map(d=>d.date)}
 function buildInventorySummaryRows(){const groups=new Map();state.inventory.forEach(row=>{const key=[row.product_code,row.company_code,row.center].join('|');if(!groups.has(key))groups.set(key,{...row,total_stock:0,available_stock:0,allocated_stock:0,expiration_dates:[],lot_count:0,lots:[]});const g=groups.get(key);g.total_stock+=row.total_stock;g.available_stock+=row.available_stock;g.allocated_stock+=row.allocated_stock;if(row.expiration_date)g.expiration_dates.push(row.expiration_date);g.lot_count+=1;g.lots.push(row)});state.summaryRows=[...groups.values()].map(g=>{const vel=state.salesVelocity.get(g.product_code)||{},rv=(state.realVelocity&&(state.realVelocity.get(g.product_code)||state.realVelocity.get(g.company_code)))||{},avg=Number(rv.avg14_daily)||0,days=avg>0?g.available_stock/avg:null;return {...g,expiration_date:g.expiration_dates.sort()[0]||'',recent7_qty:Math.round(Number(rv.recent7_qty)||0),recent14_qty:Math.round(Number(rv.recent14_qty)||0),recent30_qty:Math.round(Number(rv.recent30_qty)||0),bulk30_qty:Math.round(Number(rv.bulk30_qty)||0),bulk_events:(rv.bulk_events||[]).slice().sort((a,b)=>b.date.localeCompare(a.date)),real_daily:rv.daily||{},avg14_daily:avg,days_left:days,mapped14_qty:Math.round(Number(vel.recent14_qty)||0),mapped_products:vel.mapped_products||'',mapping_needs_review:!!vel.needs_review}}).map(r=>({...r,expiry:expiryPlan(r)}))}
 // ── 소비기한(로트)별 재고 ──
