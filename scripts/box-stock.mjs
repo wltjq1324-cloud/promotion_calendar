@@ -185,12 +185,17 @@ export function skuDaily(days, today, now, n = SKU_DAILY_DAYS) {
     const rec = days[d];
     const bulk = {};
     const direct = (rec && rec.directParcel) || {};
+    const bulkCh = {};
     for (const e of (rec && rec.b2b) || []) {
       const k = e.productCode || e.code;
       const q = e.qty - (direct[k] || 0);
-      if (q > 0) bulk[k] = (bulk[k] || 0) + q;
+      if (q > 0) {
+        bulk[k] = (bulk[k] || 0) + q;
+        const ch = (e.ch || []).filter((c) => !/택배/.test(c));
+        if (ch.length) bulkCh[k] = [...new Set([...(bulkCh[k] || []), ...ch])];
+      }
     }
-    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, direct, missing: !(rec && rec.skuKey === 'product_code'), key: 'product_code', ...(d === today ? { partial: true } : {}) };
+    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, bulkCh, direct, missing: !(rec && rec.skuKey === 'product_code'), key: 'product_code', ...(d === today ? { partial: true } : {}) };
   });
   return { generated_at: now, basis: 'out_complete_dt', source: 'ourbox out_perf_period', days: list };
 }
