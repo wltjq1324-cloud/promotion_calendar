@@ -318,7 +318,7 @@ textarea{min-height:80px;resize:vertical}
 <section class="calendar-shell">
   <div class="calendar-grid" id="calendarGrid"></div>
 </section>
-<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-10-16b</p>
+<p style="margin:14px 2px 0;color:var(--muted);font-size:11px" id="buildStamp">build 2026-10-28a</p>
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -458,7 +458,6 @@ textarea{min-height:80px;resize:vertical}
 <script>
 const API   = 'https://script.google.com/macros/s/AKfycbwama99AMKAZK_vxJkFf7PnxyTgd0t_INjMheflr2oR3zIoCeSQAoedsr9XlUWaipGFPw/exec';
 const INVENTORY_URL = 'inventory-latest.json';
-const DASHBOARD_CACHE_URL = 'https://script.google.com/macros/s/AKfycbwi5lQEGI8caIRxVmJWKPaad0G07cAKWkXF52YYzpKJhJ2dV21QggZ1jdx3nxHP-eCpNQ/exec?mode=cache';
 const SKU_MAPPING_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1FGxRu59DL7SMB4siYE_IZiTU5rNrHWefIeI9e_Hqazs/gviz/tq?tqx=out:csv&sheet=sku_mapping';
 
 const ACCESS_CODES = {
@@ -882,34 +881,30 @@ function dateKeyFromDays(base,days){
   d.setDate(d.getDate()-days+1);
   return toKey(d);
 }
+// SKU별 출고: 아워박스 실출고(sku-daily.json, 매일 08:00 전날까지). /inven 과 같은 계산 — 14일 택배 ÷ 14, 대량출고(차량 출고)는 제외.
 async function loadSalesVelocity(force=false){
   if(salesVelocityLoaded&&!force)return;
-  await loadSkuMapping();
-  const res=await fetch(`${DASHBOARD_CACHE_URL}&t=${Date.now()}`,{cache:'no-store'});
-  if(!res.ok)throw new Error('대시보드 출고 캐시를 불러오지 못했습니다.');
+  const res=await fetch(`sku-daily.json?t=${Date.now()}`,{cache:'no-store'});
+  if(!res.ok)throw new Error('실출고 파일(sku-daily.json)을 불러오지 못했습니다.');
   const data=await res.json();
-  const rows=(data.dashboardCache&&Array.isArray(data.dashboardCache.productRows))?data.dashboardCache.productRows:[];
-  const latest=rows.map(r=>r.date).filter(Boolean).sort().at(-1)||'';
+  const days=(Array.isArray(data.days)?data.days:[]).filter(d=>!d.partial&&!d.missing).sort((a,b)=>a.date.localeCompare(b.date));
+  const latest=days.length?days[days.length-1].date:'';
   state.velocityLatestDate=latest;
-  const s7=dateKeyFromDays(latest,7),s14=dateKeyFromDays(latest,14),s30=dateKeyFromDays(latest,30),acc=new Map();
-  rows.forEach(r=>{
-    if(!r.date||r.date<s30||!r.product)return;
-    findSkuMappings(r.product).forEach(m=>{
-      const code=m.inventory_product_code;
-      if(!code)return;
-      if(!acc.has(code))acc.set(code,{recent7_qty:0,recent14_qty:0,recent30_qty:0,mapped_products:new Set(),needs_review:false});
-      const item=acc.get(code),qty=(Number(r.qty)||0)*(Number(m.component_qty)||1);
-      if(r.date>=s7)item.recent7_qty+=qty;
-      if(r.date>=s14)item.recent14_qty+=qty;
-      item.recent30_qty+=qty;
-      item.mapped_products.add(r.product);
-      if(m.needs_review)item.needs_review=true;
+  const acc=new Map();
+  if(latest){
+    const s7=dateKeyFromDays(latest,7),s14=dateKeyFromDays(latest,14),s30=dateKeyFromDays(latest,30);
+    days.forEach(d=>{
+      if(d.date<s30)return;
+      Object.entries(d.parcel||{}).forEach(([code,q])=>{
+        if(!acc.has(code))acc.set(code,{recent7_qty:0,recent14_qty:0,recent30_qty:0});
+        const item=acc.get(code);q=Number(q)||0;
+        if(d.date>=s7)item.recent7_qty+=q;
+        if(d.date>=s14)item.recent14_qty+=q;
+        item.recent30_qty+=q;
+      });
     });
-  });
-  acc.forEach(v=>{
-    v.avg14_daily=v.recent14_qty/14;
-    v.mapped_products=[...v.mapped_products].slice(0,8).join(', ');
-  });
+  }
+  acc.forEach(v=>{v.avg14_daily=v.recent14_qty/14});
   state.salesVelocity=acc;
   salesVelocityLoaded=true;
 }
@@ -1045,7 +1040,7 @@ function buildSkuSummaryRows(){
     g.lot_count+=1;
   });
   state.skuSummaryRows=[...groups.values()].map(g=>{
-    const vel=state.salesVelocity.get(g.product_code)||{};
+    const vel=state.salesVelocity.get(g.product_code)||state.salesVelocity.get(g.company_code)||{};
     const avg=Number(vel.avg14_daily)||0;
     return {
       ...g,
@@ -1055,14 +1050,12 @@ function buildSkuSummaryRows(){
       recent30_qty:Math.round(Number(vel.recent30_qty)||0),
       avg14_daily:avg,
       days_left:avg>0?g.available_stock/avg:null,
-      mapped_products:vel.mapped_products||'',
-      mapping_needs_review:!!vel.needs_review
     };
   });
 }
 function skuRiskBadge(item){
   const avg=Number(item.avg14_daily)||0,available=Number(item.available_stock)||0;
-  if(avg<=0)return {text:item.mapped_products?'최근 출고 없음':'출고 매핑 없음',cls:item.mapped_products?'neutral':'review'};
+  if(avg<=0)return {text:'최근 출고 없음',cls:'neutral'};
   if(available/avg<21)return {text:'21일 미만',cls:'critical'};
   return {text:'안정',cls:'good'};
 }
@@ -1074,7 +1067,7 @@ function renderSkuInventory(){
     if(b.days_left==null)return -1;
     return a.days_left-b.days_left;
   });
-  document.getElementById('inventoryUpdated').textContent=`최종 갱신: ${state.inventoryUpdatedAt||'-'} · 대시보드 최신일: ${state.velocityLatestDate||'-'}`;
+  document.getElementById('inventoryUpdated').textContent=`최종 갱신: ${state.inventoryUpdatedAt||'-'} · 출고(아워박스 실출고) ${state.velocityLatestDate||'-'}까지`;
   document.getElementById('inventoryVisibleCount').textContent=num(rows.length)+'개';
   document.getElementById('inventoryTotalStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.total_stock)||0),0));
   document.getElementById('inventoryAvailableStock').textContent=num(rows.reduce((s,r)=>s+(Number(r.available_stock)||0),0));
@@ -1088,10 +1081,10 @@ function renderSkuInventory(){
     const risk=skuRiskBadge(item);
     const stock=stockBadge(item);
     if(risk.text==='21일 미만')tr.classList.add('risk');
-    if(!item.mapped_products)tr.classList.add('unmapped');
+    if(!(item.avg14_daily>0))tr.classList.add('unmapped');
     [
       {text:inventoryCategory(item),badge:'inventory-badge'},
-      {html:`${item.product_name}<small style="display:block;margin-top:4px;color:var(--muted);font-weight:700">${item.mapped_products?`매핑: ${item.mapped_products}`:'매핑 상품 없음'}${item.mapping_needs_review?' · 검토 필요':''}</small>`,cls:'product-cell'},
+      {text:item.product_name,cls:'product-cell'},
       {text:item.product_code},
       {text:item.company_code},
       {text:item.center},
