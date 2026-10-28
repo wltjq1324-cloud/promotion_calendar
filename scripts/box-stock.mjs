@@ -32,6 +32,8 @@ const CONFIG_PATH = path.join(ROOT, 'box-stock-config.json');
 const LOOKUP_PATH = path.join(ROOT, 'box-lookup.json');
 const DAILY_PATH = path.join(ROOT, 'box-daily.json');
 const OUT_PATH = path.join(ROOT, 'box-stock-latest.json');
+const SKU_DAILY_PATH = path.join(ROOT, 'sku-daily.json');
+const SKU_DAILY_DAYS = 35;
 
 const BOX_KEYS = ['b1', 'b2', 'b3', 'b4', 'gift', 'paper', 'plain', 'other'];
 
@@ -102,7 +104,7 @@ export function classifyInvoice(lines, lookup, date = '') {
 
 export function emptyDay(date) {
   const d = { date, invoices: 0, lines: 0, noInvoiceGroups: 0, noInvoiceQty: 0,
-    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [] };
+    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [], parcel: {} };
   for (const k of BOX_KEYS) d[k] = 0;
   return d;
 }
@@ -114,6 +116,8 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
   const noInvoice = new Map();
   // 송장 없는 행 = B2B 벌크(차량 출고). 품목별 수량을 남겨 화면의 B2B 출고 타임라인에 쓴다.
   const b2b = new Map();
+  // 송장 있는 행 = 택배 출고. 재고 SKU(업체품목코드)별 수량 → /inven 실출고(sku-daily.json)
+  const parcel = {};
   for (const r of Array.isArray(datas) ? datas : []) {
     day.lines += 1;
     const line = {
@@ -133,6 +137,8 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
       b2b.set(bk, e);
       continue;
     }
+    const pk = line.code || line.productCode;
+    if (pk) parcel[pk] = (parcel[pk] || 0) + line.qty;
     // 송장 열이 콤마로 여러 개 올 수 있다(out_perf). 첫 송장으로 묶는다.
     const key = inv.split(',')[0].trim();
     if (!byInvoice.has(key)) byInvoice.set(key, []);
@@ -157,9 +163,22 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
   day.noInvoiceGroups = noInvoice.size;
   day.noInvoiceQty = [...noInvoice.values()].reduce((s, q) => s + q, 0);
   day.b2b = [...b2b.values()].sort((a, b) => b.qty - a.qty);
+  day.parcel = parcel;
   day.unknownSigs = [...unknownSigs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([sig, n]) => `${sig} ×${n}`);
   return day;
+}
+
+// /inven 실출고용: 날짜별 재고 SKU 출고 {date, parcel:{code:qty}, bulk:{code:qty}} (출고완료일 기준).
+// 오늘은 아침 실행 시점이라 대부분 미완료 → partial 로 표시하고 화면은 전날까지로 계산한다.
+export function skuDaily(days, today, now, n = SKU_DAILY_DAYS) {
+  const list = dateList(addDays(today, -(n - 1)), today).map((d) => {
+    const rec = days[d];
+    const bulk = {};
+    for (const e of (rec && rec.b2b) || []) bulk[e.code] = (bulk[e.code] || 0) + e.qty;
+    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, missing: !(rec && rec.parcel), ...(d === today ? { partial: true } : {}) };
+  });
+  return { generated_at: now, basis: 'out_complete_dt', source: 'ourbox out_perf_period', days: list };
 }
 
 // 재고 조정 이력 → 품목별 최신 실사 {dtm, date, afQty, adjQty}
@@ -500,7 +519,9 @@ export async function main() {
   for (const d of dateList(fetchFrom, today)) {
     const cached = dailyStore.days[d];
     const isAnchorDay = Object.values(anchors).some((a) => a.date === d);
-    if (cached && Array.isArray(cached.b2b) && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
+    // SKU별 택배 집계(parcel)가 없는 최근 SKU_DAILY_DAYS 일은 한 번 다시 받는다(2026-10-28 추가)
+    const needParcel = !(cached && cached.parcel) && d >= addDays(today, -SKU_DAILY_DAYS);
+    if (cached && Array.isArray(cached.b2b) && !needParcel && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
     const datas = await fetchPages('/api/wms/out/out_perf_period',
       { out_dt_type: '2', out_dt_from: d, out_dt_to: d }, 'datas', k, cfg, cfg.maxPagesPerDay);
     const rec = aggregateDay(d, datas, lookup);
@@ -549,7 +570,7 @@ export async function main() {
     return r;
   });
   const dailyOut = dateList(addDays(today, -(cfg.outputDailyDays - 1)), today)
-    .map((d) => dailyStore.days[d] || emptyDay(d));
+    .map((d) => { const { parcel, ...rest } = dailyStore.days[d] || emptyDay(d); return rest; });
   const win = dailyOut.filter((d) => d.invoices);
   const invSum = win.reduce((s, d) => s + d.invoices, 0) || 1;
   const coverage = {
@@ -572,6 +593,7 @@ export async function main() {
     writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2) + '\n', 'utf8');
   }
   writeFileSync(OUT_PATH, JSON.stringify(out, null, 1), 'utf8');
+  writeFileSync(SKU_DAILY_PATH, JSON.stringify(skuDaily(dailyStore.days, today, now)), 'utf8');
   console.log(`box-stock: ${items.map((i) => `${i.label}=${i.est}`).join(', ')} | API ${CALLS}회, 일별 ${fetchedDays}일 수집, ${out.elapsed_ms}ms`);
   for (const w of warnings) console.log('warn:', w);
   for (const it of items) for (const w of it.warnings) console.log(`warn[${it.label}]:`, w);

@@ -182,6 +182,23 @@ const eq = (name, got, want) => {
     eq('택배 송장은 박스로만 집계', [day.invoices, day.noInvoiceQty], [1, 2050]);
     eq('빈 날은 b2b 빈 배열', m.emptyDay('2026-10-02').b2b, []);
   }
+
+  {
+    console.log('\n[SKU별 실출고 (sku-daily)]');
+    const rows = [
+      { invoice: '111', product_company_code: 'G-O034', out_qty: 2 },           // [L] 홈쇼핑 라우팅 출고
+      { invoice: '112', product_company_code: 'G-O022', out_qty: 1 },
+      { invoice: '113', product_company_code: 'G-O022', out_qty: 1 },           // 세트 송장: 구성품 행 단위
+      { invoice: '113', product_company_code: 'G-O094', out_qty: 2 },
+      { invoice: '', out_data_sno: 'B1', product_company_code: 'G-O022', out_qty: 500 }, // 벌크
+    ];
+    const day = m.aggregateDay('2026-10-27', rows, lookup);
+    eq('택배는 SKU별로 합산(세트 송장은 구성품별)', day.parcel, { 'G-O034': 2, 'G-O022': 2, 'G-O094': 2 });
+    const sd = m.skuDaily({ '2026-10-27': day }, '2026-10-28', 'now', 3);
+    eq('벌크는 bulk 로 분리', sd.days.find((d) => d.date === '2026-10-27').bulk, { 'G-O022': 500 });
+    eq('없는 날은 missing, 오늘은 partial', sd.days.map((d) => [d.date, d.missing, !!d.partial]),
+      [['2026-10-26', true, false], ['2026-10-27', false, false], ['2026-10-28', true, true]]);
+  }
   console.log(`\n통과 ${pass} / 실패 ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
