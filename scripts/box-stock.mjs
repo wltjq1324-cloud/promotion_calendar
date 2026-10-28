@@ -104,7 +104,7 @@ export function classifyInvoice(lines, lookup, date = '') {
 
 export function emptyDay(date) {
   const d = { date, invoices: 0, lines: 0, noInvoiceGroups: 0, noInvoiceQty: 0,
-    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [], parcel: {}, directParcel: {} };
+    unknown: 0, byLookup: 0, byQty: 0, unknownSigs: [], b2b: [], parcel: {}, directParcel: {}, skuKey: 'product_code' };
   for (const k of BOX_KEYS) d[k] = 0;
   return d;
 }
@@ -132,18 +132,20 @@ export function aggregateDay(date, datas, lookup, afterDtm = '') {
       if (!noInvoice.has(g)) noInvoice.set(g, 0);
       noInvoice.set(g, noInvoice.get(g) + line.qty);
       const bk = line.code || line.productCode || '?';
-      const e = b2b.get(bk) || { code: bk, name: text(r.product_name), qty: 0, ch: [] };
+      const e = b2b.get(bk) || { code: bk, productCode: line.productCode, name: text(r.product_name), qty: 0, ch: [] };
       e.qty += line.qty;
       const ch = text(r.mall_name || r.channel);
       if (ch && !e.ch.includes(ch)) e.ch.push(ch);
       b2b.set(bk, e);
       if (/택배/.test(ch)) {
-        parcel[bk] = (parcel[bk] || 0) + line.qty;
-        directParcel[bk] = (directParcel[bk] || 0) + line.qty;
+        const sk = line.productCode || line.code;
+        parcel[sk] = (parcel[sk] || 0) + line.qty;
+        directParcel[sk] = (directParcel[sk] || 0) + line.qty;
       }
       continue;
     }
-    const pk = line.code || line.productCode;
+    // SKU 키는 상품코드: 같은 상품이 업체품목코드만 바뀌어 출고되는 경우가 있다(2026-10 고구마빵 3개입: 재고 G-O032, 출고·입고 G-O151, 상품코드 202927000031 동일)
+    const pk = line.productCode || line.code;
     if (pk) parcel[pk] = (parcel[pk] || 0) + line.qty;
     // 송장 열이 콤마로 여러 개 올 수 있다(out_perf). 첫 송장으로 묶는다.
     const key = inv.split(',')[0].trim();
@@ -184,10 +186,11 @@ export function skuDaily(days, today, now, n = SKU_DAILY_DAYS) {
     const bulk = {};
     const direct = (rec && rec.directParcel) || {};
     for (const e of (rec && rec.b2b) || []) {
-      const q = e.qty - (direct[e.code] || 0);
-      if (q > 0) bulk[e.code] = (bulk[e.code] || 0) + q;
+      const k = e.productCode || e.code;
+      const q = e.qty - (direct[k] || 0);
+      if (q > 0) bulk[k] = (bulk[k] || 0) + q;
     }
-    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, direct, missing: !(rec && rec.parcel && rec.directParcel), ...(d === today ? { partial: true } : {}) };
+    return { date: d, parcel: (rec && rec.parcel) || {}, bulk, direct, missing: !(rec && rec.skuKey === 'product_code'), key: 'product_code', ...(d === today ? { partial: true } : {}) };
   });
   return { generated_at: now, basis: 'out_complete_dt', source: 'ourbox out_perf_period', days: list };
 }
@@ -531,7 +534,7 @@ export async function main() {
     const cached = dailyStore.days[d];
     const isAnchorDay = Object.values(anchors).some((a) => a.date === d);
     // SKU별 택배 집계(parcel)가 없는 최근 SKU_DAILY_DAYS 일은 한 번 다시 받는다(2026-10-28 추가)
-    const needParcel = !(cached && cached.parcel && cached.directParcel) && d >= addDays(today, -SKU_DAILY_DAYS);
+    const needParcel = !(cached && cached.skuKey === 'product_code') && d >= addDays(today, -SKU_DAILY_DAYS);
     if (cached && Array.isArray(cached.b2b) && !needParcel && d < refetchFrom && !isAnchorDay && !cfg.rebuildDailyOnce) continue;
     const datas = await fetchPages('/api/wms/out/out_perf_period',
       { out_dt_type: '2', out_dt_from: d, out_dt_to: d }, 'datas', k, cfg, cfg.maxPagesPerDay);
@@ -581,7 +584,7 @@ export async function main() {
     return r;
   });
   const dailyOut = dateList(addDays(today, -(cfg.outputDailyDays - 1)), today)
-    .map((d) => { const { parcel, directParcel, ...rest } = dailyStore.days[d] || emptyDay(d); return rest; });
+    .map((d) => { const { parcel, directParcel, skuKey, ...rest } = dailyStore.days[d] || emptyDay(d); return rest; });
   const win = dailyOut.filter((d) => d.invoices);
   const invSum = win.reduce((s, d) => s + d.invoices, 0) || 1;
   const coverage = {
