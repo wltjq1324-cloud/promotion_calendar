@@ -1,3 +1,5 @@
+# 정기 수집은 매일 아침 1회(07:50/08:30 KST). 낮에 아워박스에서 재고를 옮긴 뒤(예: 2026-11-11 오리지널 80g 30개입(급식) G-O160 → 바로먹는감자빵 80g 1개입 G-O163 쪼개기 이관)
+# 바로 반영하려면 이 파일을 바꿔 푸시한다 — 앱 토큰은 workflow_dispatch 권한이 없어 푸시 트리거로 즉시 1회 돈다.
 $ErrorActionPreference = 'Stop'
 
 $accessKey = ([string]$env:OURBOX_API_ACCESS_KEY).Trim()
