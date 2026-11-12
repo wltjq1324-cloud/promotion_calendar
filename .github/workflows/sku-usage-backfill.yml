@@ -1,0 +1,54 @@
+name: SKU usage backfill (연간 출고 1회 수집)
+
+# 2026년 SKU 주차별 출고 기초 자료용 1회 수집. 스크립트나 이 파일을 작업 브랜치에 푸시하면 한 번 돈다.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'claude/wonderful-bardeen-v01xor'
+    paths:
+      - '.github/workflows/sku-usage-backfill.yml'
+      - 'scripts/sku-usage-backfill.mjs'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sku-usage-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch out_perf_period by day
+        env:
+          OURBOX_API_ACCESS_KEY: ${{ secrets.OURBOX_API_ACCESS_KEY }}
+          OURBOX_API_SECRET_KEY: ${{ secrets.OURBOX_API_SECRET_KEY }}
+        run: node scripts/sku-usage-backfill.mjs
+
+      - name: Commit result
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sku-usage-2026.json
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git commit -m "chore: sku usage backfill 2026"
+          for i in 1 2 3; do
+            if git push; then exit 0; fi
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+          done
+          exit 1
