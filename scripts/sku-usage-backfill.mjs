@@ -3,7 +3,7 @@
 // 택배·대량 구분은 scripts/box-stock.mjs aggregateDay 와 같다:
 //   송장 있음 = 택배, 송장 없음 + 채널에 '택배' = 직택배(택배에 포함), 그 밖의 송장 없음 = 대량출고.
 // 실행: OURBOX_API_ACCESS_KEY / OURBOX_API_SECRET_KEY 환경변수. node scripts/sku-usage-backfill.mjs [from] [to]
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -27,7 +27,7 @@ export function aggregate(rows) {
     const code = text(r.product_code) || text(r.product_company_code) || '?';
     const qty = toInt(r.out_qty);
     const ch = text(r.mall_name || r.channel) || '(채널 없음)';
-    names[code] = { name: text(r.product_name), company: text(r.product_company_code) };
+    if (text(r.product_name) || !names[code]) names[code] = { name: text(r.product_name), company: text(r.product_company_code) };
     if (text(r.invoice)) {
       add(day.parcel, code, qty);
       day.parcelCh[ch] = day.parcelCh[ch] || {}; add(day.parcelCh[ch], code, qty);
@@ -71,9 +71,25 @@ async function main() {
     }
   };
 
-  const products = {}; const days = []; const mismatches = [];
+  // 이어받기: 결과 파일이 있으면 끝난 날짜(partial 아님)는 다시 받지 않는다. 7일마다 저장하고, 시간 예산을 넘기면 멈춘다.
+  const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null;
+  const products = (prev && prev.products) || {}; const mismatches = (prev && prev.mismatches) || [];
+  const days = ((prev && prev.days) || []).filter((x) => !x.partial && x.date >= from && x.date < today);
+  const done = new Set(days.map((x) => x.date));
+  const budgetMs = Number(process.env.BUDGET_MIN || 100) * 60000;
   const t0 = Date.now();
+  let complete = true;
+  const save = () => {
+    days.sort((a, b) => (a.date < b.date ? -1 : 1));
+    writeFileSync(OUT, JSON.stringify({
+      generated_at: new Date().toISOString(), basis: 'out_complete_dt', source: 'ourbox out_perf_period',
+      from, to, complete, calls: calls + ((prev && prev.calls) || 0), elapsed_ms: Date.now() - t0, mismatches, products, days,
+    }), 'utf8');
+  };
+  let sinceSave = 0;
   for (let d = from; d <= to; d = addDays(d, 1)) {
+    if (done.has(d)) continue;
+    if (Date.now() - t0 > budgetMs) { complete = false; console.log(`시간 예산 초과: ${d} 부터 남음`); break; }
     const rows = []; let page = 1, totalPage = 1, totalCnt = 0;
     do {
       const json = await post({ out_dt_type: '2', out_dt_from: d, out_dt_to: d, page });
@@ -87,13 +103,11 @@ async function main() {
     Object.assign(products, names);
     days.push({ date: d, rows: rows.length, ...day, ...(d === today ? { partial: true } : {}) });
     if (rows.length) console.log(`${d} rows ${rows.length} pages ${totalPage}`);
+    sinceSave += 1;
+    if (sinceSave >= 7) { save(); sinceSave = 0; }
   }
-  const out = {
-    generated_at: new Date().toISOString(), basis: 'out_complete_dt', source: 'ourbox out_perf_period',
-    from, to, calls, elapsed_ms: Date.now() - t0, mismatches, products, days,
-  };
-  writeFileSync(OUT, JSON.stringify(out), 'utf8');
-  console.log(`완료: ${days.length}일, 호출 ${calls}회, 불일치 ${mismatches.length}일, ${Math.round(out.elapsed_ms / 1000)}초`);
+  save();
+  console.log(`${complete ? '완료' : '중단'}: ${days.length}일, 이번 호출 ${calls}회, 불일치 ${mismatches.length}일, ${Math.round((Date.now() - t0) / 1000)}초`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main().catch((e) => { console.error(e); process.exit(1); });
