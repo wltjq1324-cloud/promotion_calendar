@@ -1,6 +1,7 @@
 # 2026 SKU 주차별 출고 데이터셋: 아워박스 실출고(첫 출고일~) + 출고 시트 주문 추정(1/1~첫 출고 전날)
 # 사용: python3 build_usage.py ../../sku-usage-2026.json productRows.json ../../inventory-latest.json dataset.json
 #       python3 build_xlsx.py dataset.json SKU_주차별_출고_2026.xlsx
+#       (B2C 계획 기초) 여섯째 인자 daily.json 을 주면 SKU별 일별 수량을 남긴다 → build_plan.py → build_plan_xlsx.py
 # productRows.json = 시트 "*아워박스_DB_초안" 숨김 탭 dashboard_cache 의 section=productRows 조각(C열)을 이어 붙인 JSON 배열
 #   [{date, channel, product(표준품목명), qty, ...}]. 매출·마진이 들어 있어 저장소에 올리지 않는다.
 import json, sys, re, collections, datetime, os
@@ -70,7 +71,7 @@ weeks = sorted({wk(d) for d in days_all})
 w_days = {w: [d for d in days_all if wk(d) == w] for w in weeks}
 months = sorted({int(d[5:7]) for d in days_all})
 bulk_w0 = wk(API_START)
-out_rows = []
+out_rows = []; daily = {}
 def series(code, sname):
     p = collections.Counter(); b = collections.Counter()
     if sname:
@@ -101,7 +102,8 @@ for code, sname in keys:
         'pEst': sum(q for d, q in p.items() if d < API_START), 'pReal': sum(q for d, q in p.items() if d >= API_START and code),
     }
     row['pt'] = sum(row['pw']); row['bt'] = sum(v or 0 for v in row['bw'])
-    if row['pt'] + row['bt'] > 0: out_rows.append(row)
+    if row['pt'] + row['bt'] > 0:
+        out_rows.append(row); daily[(row['name'], row['code'])] = [p[d] for d in days_all]
 CAT = {'판매상품': 0, '세트': 1, '증정품': 2, '부자재': 3}
 out_rows.sort(key=lambda r: (CAT.get(r['cat'], 9), -(r['pt'] + r['bt'])))
 
@@ -136,6 +138,8 @@ data = {
     'mismatch': usage['mismatches'], 'calls': usage['calls'],
 }
 json.dump(data, open(sys.argv[4], 'w'), ensure_ascii=False)
+if len(sys.argv) > 5:   # 계획용: SKU별 일별 택배 수량
+    json.dump({'days': days_all, 'apiStart': API_START, 'end': END, 'lag': LAG, 'rows': [{'cat': r['cat'], 'name': r['name'], 'code': r['code'], 'src': r['src'], 'd': daily[(r['name'], r['code'])]} for r in out_rows]}, open(sys.argv[5], 'w'), ensure_ascii=False)
 
 # ── 보고
 print('END', END, '| 첫 아워박스 출고일', first_api, '| 호출', usage['calls'], '| 행수 불일치', usage['mismatches'])
