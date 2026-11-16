@@ -5,7 +5,7 @@
 //   화면용 파일(sku-daily.json 35일, box-daily.json 120일)은 오래된 날을 지우므로,
 //   연간 기록은 여기(history/)에만 남는다.
 //     history/inout-YYYY.json   기계용 원본 (날짜 → 입고/택배/대량 → 상품코드 → 수량)
-//     history/inout-YYYY.csv    사람·구글 시트용 (한 줄 = 날짜×상품). 운영_DB 시트가 IMPORTDATA 로 읽는다.
+//     history/inout-YYYY.csv    사람·구글 시트용 (한 줄 = 날짜×상품, 월은 '10월' 형태). 운영_DB 시트가 IMPORTDATA 로 읽는다.
 //
 // 기준 (/inven 과 같다)
 //   입고     = put_perf 입고완료일(input_complete_dt), 상품코드별 합
@@ -89,7 +89,7 @@ export function toCsv(hist) {
     const codes = new Set([...Object.keys(day.in || {}), ...Object.keys(day.parcel || {}), ...Object.keys(day.bulk || {})]);
     const rows = [...codes].map((pc) => {
       const p = hist.products[pc] || {};
-      return [d, d.slice(0, 7), W[new Date(`${d}T00:00:00Z`).getUTCDay()], pc, p.companyCode || '', p.name || pc,
+      return [d, `${d.slice(5, 7)}월`, W[new Date(`${d}T00:00:00Z`).getUTCDay()], pc, p.companyCode || '', p.name || pc,
         (day.in || {})[pc] || 0, (day.parcel || {})[pc] || 0, (day.bulk || {})[pc] || 0];
     }).filter((r) => r[6] || r[7] || r[8]).sort((a, b) => String(a[5]).localeCompare(String(b[5]), 'ko'));
     for (const r of rows) lines.push(r.map(esc).join(','));
@@ -108,7 +108,7 @@ function save(hist, now) {
   hist.updated_at = now;
   hist.earliest = { in: first('in'), parcel: first('parcel'), bulk: first('bulk') };
   writeFileSync(path.join(HIST_DIR, `inout-${hist.year}.json`), JSON.stringify(hist), 'utf8');
-  writeFileSync(path.join(HIST_DIR, `inout-${hist.year}.csv`), '﻿' + toCsv(hist), 'utf8');
+  writeFileSync(path.join(HIST_DIR, `inout-${hist.year}.csv`), toCsv(hist), 'utf8');
 }
 
 export async function main() {
