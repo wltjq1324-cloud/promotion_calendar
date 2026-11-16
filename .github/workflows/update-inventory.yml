@@ -3,11 +3,14 @@ name: Update OurBox inventory
 on:
   workflow_dispatch:
   schedule:
-    # 매일 07:50 KST (= 22:50 UTC 전날) — 업무 시작 전에 최신 재고를 받아 둔다.
-    # GitHub 예약 실행은 수십 분 밀리거나 빠질 수 있어 08:30 KST(23:30 UTC)에 보완 실행.
-    # 보완 실행은 오늘 07:00 이후 스냅샷이 이미 있으면 아무것도 하지 않는다.
-    - cron: '50 22 * * *'
-    - cron: '30 23 * * *'
+    # 아침 08시 전에 반영하려고 새벽 03:15~07:15 KST(18:15~22:15 UTC)에 여러 번 시도한다.
+    # GitHub 예약 실행은 이 시간대에 2~4시간씩 밀린다(2026-10-29~11-16 실측: 07:50 예약 → 10:30~13:22 반영).
+    # 각 시도는 오늘 03:00 이후 스냅샷이 이미 있으면 건너뛰므로 아워박스 조회는 하루 1회 그대로다.
+    - cron: '15 18 * * *'
+    - cron: '15 19 * * *'
+    - cron: '15 20 * * *'
+    - cron: '15 21 * * *'
+    - cron: '15 22 * * *'
   push:
     paths:
       - '.github/workflows/update-inventory.yml'
@@ -27,16 +30,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Skip backup run if already updated this morning
+      - name: Skip if already updated today
         id: guard
-        if: github.event_name == 'schedule' && github.event.schedule == '30 23 * * *'
+        if: github.event_name == 'schedule'
         shell: pwsh
         run: |
           $kst = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), [System.TimeZoneInfo]::FindSystemTimeZoneById('Korea Standard Time'))
           $raw = Get-Content inventory-latest.json -Raw
           $m = [regex]::Match($raw, '"generated_at"\s*:\s*"([^"]+)"')
-          if ($m.Success -and $m.Groups[1].Value -ge ($kst.ToString('yyyy-MM-dd') + ' 07:00')) {
-            Write-Host "오늘 아침 스냅샷이 이미 있음($($m.Groups[1].Value)) — 건너뜀"
+          if ($m.Success -and $m.Groups[1].Value -ge ($kst.ToString('yyyy-MM-dd') + ' 03:00')) {
+            Write-Host "오늘 스냅샷이 이미 있음($($m.Groups[1].Value)) — 건너뜀"
             "skip=true" >> $env:GITHUB_OUTPUT
           }
 

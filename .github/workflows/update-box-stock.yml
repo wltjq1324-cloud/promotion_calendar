@@ -3,8 +3,14 @@ name: Update box stock (박스 실재고 근사치)
 on:
   workflow_dispatch:
   schedule:
-    # 매일 08:00 KST (= 23:00 UTC 전날). 아워박스 조회는 하루 1회 원칙.
-    - cron: '0 23 * * *'
+    # 아침 08시 전에 반영하려고 새벽 03:30~07:30 KST(18:30~22:30 UTC)에 여러 번 시도한다.
+    # GitHub 예약 실행은 이 시간대에 2~4시간씩 밀린다(2026-10-29~11-16 실측: 08:00 예약 → 10:30~13:30 반영).
+    # 각 시도는 오늘 03:00 이후 결과가 이미 있으면 건너뛰므로 아워박스 조회는 하루 1회 그대로다.
+    - cron: '30 18 * * *'
+    - cron: '30 19 * * *'
+    - cron: '30 20 * * *'
+    - cron: '30 21 * * *'
+    - cron: '30 22 * * *'
   push:
     paths:
       - '.github/workflows/update-box-stock.yml'
@@ -26,21 +32,35 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Skip if already updated today
+        id: guard
+        if: github.event_name == 'schedule'
+        shell: bash
+        run: |
+          today=$(TZ=Asia/Seoul date +%F)
+          got=$(node -e 'try{process.stdout.write(String(require("./box-stock-latest.json").generated_at||""))}catch(e){}')
+          echo "last: $got / today: $today"
+          if [[ "$got" > "$today 03:00" ]]; then echo "오늘 결과가 이미 있음 — 건너뜀"; echo "skip=true" >> "$GITHUB_OUTPUT"; fi
+
       - name: Set up Node
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Run tests
+        if: steps.guard.outputs.skip != 'true'
         run: node scripts/box-stock.test.js
 
       - name: Compute box stock from OurBox API
+        if: steps.guard.outputs.skip != 'true'
         env:
           OURBOX_API_ACCESS_KEY: ${{ secrets.OURBOX_API_ACCESS_KEY }}
           OURBOX_API_SECRET_KEY: ${{ secrets.OURBOX_API_SECRET_KEY }}
         run: node scripts/box-stock.mjs
 
       - name: Commit box stock snapshot
+        if: steps.guard.outputs.skip != 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
