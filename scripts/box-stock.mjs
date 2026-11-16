@@ -420,7 +420,7 @@ export function computeItem({ item, anchor, receipts, daysMap, anchorDayUsage, t
 }
 
 // ───────────────────────── API ─────────────────────────
-function keys() {
+export function keys() {
   const access = text(process.env.OURBOX_API_ACCESS_KEY);
   const secret = text(process.env.OURBOX_API_SECRET_KEY);
   if (!access || !secret) throw new Error('OURBOX_API_ACCESS_KEY / OURBOX_API_SECRET_KEY 환경변수가 필요합니다.');
@@ -428,6 +428,7 @@ function keys() {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let CALLS = 0;
+export const apiCalls = () => CALLS;
 
 async function post(pathname, body, k) {
   CALLS += 1;
@@ -447,7 +448,7 @@ async function post(pathname, body, k) {
 }
 
 // 페이지 끝까지 (total_page / ctotal_page 둘 다 인식)
-async function fetchPages(pathname, body, listKey, k, cfg, maxPages = 100) {
+export async function fetchPages(pathname, body, listKey, k, cfg, maxPages = 100) {
   const rows = [];
   let page = 1, total = 1;
   do {
