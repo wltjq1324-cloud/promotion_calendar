@@ -17,6 +17,7 @@
 | `box-lookup.json` | 송장 내용물 서명(`업체품목코드x수량\|…`) → 박스 종류. OMS 엑셀 49,799송장(2026-05~09)에서 생성 |
 | `sku-daily.json` | 재고 상품코드별 일출고 `{date, parcel, bulk, bulkCh}` 35일. box-stock 워크플로가 같은 `out_perf_period` 응답으로 함께 만든다. 키는 **상품코드**(업체품목코드는 같은 상품도 바뀜: 고구마빵 3개입 재고 G-O032 / 출고 G-O151) |
 | `history/inout-YYYY.json`, `.csv` | **입출고 연간 누적**(2026-11-17): 상품코드별 하루 입고(put_perf 입고완료일)·택배출고·대량출고(/inven과 같은 기준). `scripts/history.mjs`가 box-stock 워크플로에서 매일 이어 붙임(최근 3일 출고·21일 입고만 다시 받음). 아워박스 데이터는 **2026-04-16부터** 존재(1/1부터 조회했으나 그 전은 비어 있음). CSV는 운영_DB 시트 `입출고 원본` 탭이 IMPORTDATA로 읽고 `입출고 월별`(보기 드롭다운: 입고/택배출고/대량출고, 상품×월 피벗, 합계순)·`입출고 상품별`(상품 드롭다운: 월별 표+차트, 일별 내역) 탭이 그 위에서 계산. 시트 수식에 DROP 미지원, LET 변수명 c/r 금지 |
+| `scripts/dispatch-trigger.gs` | **아침 갱신 실행기**(2026-11-18): 운영_DB 시트 Apps Script에서 매일 07:30 KST 시간 트리거로 `update-inventory`·`update-box-stock`을 `workflow_dispatch` 실행. GitHub 예약은 보장이 없어(07:50 예약 → 10:30~13:30, 새벽 다중 예약 첫날 0회 실행) 이게 주 경로이고 새벽 예약은 예비. 토큰은 Apps Script 스크립트 속성 `GH_TOKEN`(Fine-grained, promotion_calendar만, Actions RW) — 저장소에 없음. 실패 시 Apps Script가 소유자에게 메일 |
 | `scripts/velocity-cache.gs`, `sku-sync.gs`, `sku-mapping-assistant.gs` | 시트 "*OURBOX_프로모션_운영_DB" 쪽 Apps Script 백업본. 2026-10-28부터 화면 출고 계산에 안 쓴다(트리거가 남아 있어도 무해) |
 
 ## 박스 실재고 계산 규칙 (2026-09-18 확정)
