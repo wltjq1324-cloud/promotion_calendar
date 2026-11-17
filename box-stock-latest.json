@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-11-17 08:14:30",
+ "generated_at": "2026-11-17 08:23:25",
  "source": "ourbox-openapi",
  "api_calls": 68,
  "fetched_days": 9,
- "elapsed_ms": 72720,
+ "elapsed_ms": 69424,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -2375,7 +2375,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-17 08:14:30"
+   "fetchedAt": "2026-11-17 08:23:25"
   },
   {
    "date": "2026-11-16",
@@ -2406,7 +2406,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-17 08:14:30"
+   "fetchedAt": "2026-11-17 08:23:25"
   },
   {
    "date": "2026-11-17",
@@ -2427,7 +2427,7 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-17 08:14:30"
+   "fetchedAt": "2026-11-17 08:23:25"
   }
  ],
  "warnings": []
