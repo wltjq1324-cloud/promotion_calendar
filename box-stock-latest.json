@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-11-18 09:01:39",
+ "generated_at": "2026-11-19 07:34:37",
  "source": "ourbox-openapi",
  "api_calls": 71,
  "fetched_days": 9,
- "elapsed_ms": 72173,
+ "elapsed_ms": 66599,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -79,8 +79,8 @@
     ]
    },
    "usage": {
-    "boxes": 7716,
-    "adjusted": 7716,
+    "boxes": 7788,
+    "adjusted": 7788,
     "since": "2026-10-06",
     "unknownShare": 0,
     "substituted": 0,
@@ -88,8 +88,8 @@
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 5818,
-   "rawEst": 5818,
+   "est": 5746,
+   "rawEst": 5746,
    "apiStock": {
     "total": 15752,
     "available": 15752,
@@ -141,13 +141,14 @@
     "2026-11-15": 4639,
     "2026-11-16": 4481,
     "2026-11-17": 5824,
-    "2026-11-18": 5818
+    "2026-11-18": 5754,
+    "2026-11-19": 5746
    },
    "weekAvg": 1014,
    "weekMax8": 3077,
    "target": 2434,
    "orderQty": 0,
-   "daysCover": 40.2,
+   "daysCover": 39.7,
    "warnings": [],
    "receiptsDaily": {
     "2026-10-16": 2016,
@@ -229,14 +230,14 @@
     ]
    },
    "usage": {
-    "boxes": 5622,
-    "adjusted": 5622,
+    "boxes": 5679,
+    "adjusted": 5679,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 2400,
-   "rawEst": 2400,
+   "est": 2343,
+   "rawEst": 2343,
    "apiStock": {
     "total": 8882,
     "available": 8882,
@@ -248,7 +249,7 @@
    "weekMax8": 1262,
    "target": 1776,
    "orderQty": 0,
-   "daysCover": 22.7,
+   "daysCover": 22.2,
    "warnings": [
     "조정 이력 af_qty 합 1,446 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
@@ -316,14 +317,14 @@
     ]
    },
    "usage": {
-    "boxes": 471,
-    "adjusted": 471,
+    "boxes": 474,
+    "adjusted": 474,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 1081,
-   "rawEst": 1081,
+   "est": 1078,
+   "rawEst": 1078,
    "apiStock": {
     "total": 1792,
     "available": 1792,
@@ -335,7 +336,7 @@
    "weekMax8": 103,
    "target": 106,
    "orderQty": 0,
-   "daysCover": 172,
+   "daysCover": 171.5,
    "warnings": [
     "조정 이력 af_qty 합 124 ≠ 장부 역산 62 — 장부 역산 값을 사용"
    ],
@@ -345,8 +346,8 @@
   }
  ],
  "coverage": {
-  "lookup": 90.8,
-  "qty": 9.2,
+  "lookup": 90.5,
+  "qty": 9.4,
   "unknown": 0,
   "unknownSigs": [
    "G-O025x1|G-O082x1|G-O083x1|G-O084x1|G-O094x1|G-O095x1|G-O128x1|G-O163x10 ×1",
@@ -469,14 +470,14 @@
   {
    "weekStart": "2026-11-15",
    "weekEnd": "2026-11-21",
-   "days": 4,
-   "invoices": 588,
+   "days": 5,
+   "invoices": 739,
    "unknown": 1,
-   "b1": 284,
-   "b2": 171,
-   "b3": 35,
-   "b4": 87,
-   "gift": 10,
+   "b1": 356,
+   "b2": 228,
+   "b3": 38,
+   "b4": 105,
+   "gift": 11,
    "paper": 0,
    "plain": 0,
    "other": 0,
@@ -484,73 +485,6 @@
   }
  ],
  "daily": [
-  {
-   "date": "2026-10-08",
-   "invoices": 202,
-   "lines": 304,
-   "noInvoiceGroups": 5,
-   "noInvoiceQty": 406,
-   "unknown": 0,
-   "byLookup": 198,
-   "byQty": 4,
-   "unknownSigs": [],
-   "b2b": [
-    {
-     "code": "G-O095",
-     "productCode": "202927000006",
-     "name": "치즈감자빵(5개입)",
-     "qty": 144,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O094",
-     "productCode": "202927000003",
-     "name": "고구마빵(4개입)",
-     "qty": 120,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O128",
-     "productCode": "P000000000013696",
-     "name": "초당옥수수빵 5개입",
-     "qty": 96,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O082",
-     "productCode": "202927000050",
-     "name": "토마토바질 감자빵 80g 6개입",
-     "qty": 30,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    },
-    {
-     "code": "G-O064",
-     "productCode": "202916000002",
-     "name": "삼색 새참 도시락 6개입",
-     "qty": 16,
-     "ch": [
-      "밭(파머스베이크샵)"
-     ]
-    }
-   ],
-   "b1": 96,
-   "b2": 53,
-   "b3": 7,
-   "b4": 46,
-   "gift": 0,
-   "paper": 0,
-   "plain": 0,
-   "other": 0,
-   "fetchedAt": "2026-10-28 15:55:57"
-  },
   {
    "date": "2026-10-09",
    "invoices": 154,
@@ -2439,28 +2373,49 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-18 09:01:39"
+   "fetchedAt": "2026-11-19 07:34:37"
   },
   {
    "date": "2026-11-18",
-   "invoices": 105,
-   "lines": 152,
+   "invoices": 193,
+   "lines": 267,
    "noInvoiceGroups": 0,
    "noInvoiceQty": 0,
    "unknown": 0,
-   "byLookup": 91,
-   "byQty": 14,
+   "byLookup": 153,
+   "byQty": 40,
    "unknownSigs": [],
    "b2b": [],
-   "b1": 26,
-   "b2": 29,
+   "b1": 79,
+   "b2": 57,
    "b3": 5,
-   "b4": 45,
+   "b4": 52,
    "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-18 09:01:39"
+   "fetchedAt": "2026-11-19 07:34:37"
+  },
+  {
+   "date": "2026-11-19",
+   "invoices": 63,
+   "lines": 102,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 47,
+   "byQty": 16,
+   "unknownSigs": [],
+   "b2b": [],
+   "b1": 19,
+   "b2": 29,
+   "b3": 3,
+   "b4": 11,
+   "gift": 1,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-11-19 07:34:37"
   }
  ],
  "warnings": []
