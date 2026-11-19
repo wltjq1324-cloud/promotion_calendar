@@ -64,7 +64,7 @@ r0 = 4; n = len(P['diag']); rl = r0 + n - 1
 for i, x in enumerate(P['diag']):
     y = r0 + i
     for j, v in enumerate([x['cat'], x['name'], x['status'], x['grade']], 1): put(ws, y, j, v, F, None, None, CENTER if j > 2 else None)
-    put(ws, y, 5, f"='월별'!E{row_m[(x['name'], x['code'])]}", FGREEN, NUM)
+    put(ws, y, 5, f"=INDEX('월별'!E:E,MATCH($B{y},'월별'!$B:$B,0))", FGREEN, NUM)
     put(ws, y, 6, f'=E{y}/SUM($E${r0}:$E${rl})', F, PCT); put(ws, y, 7, f'=SUM($F${r0}:F{y})', F, PCT)
     put(ws, y, 8, round(x['med'], 1), F, NUM); put(ws, y, 9, x['nSpike'], F, NUM); put(ws, y, 10, round(x['spikeShare'], 4), F, PCT)
     put(ws, y, 11, f"W{x['pkW']:02d}" if x['pkQty'] else '', F, None, None, CENTER); put(ws, y, 12, x['pkQty'], F, NUM)
@@ -123,7 +123,7 @@ ws = wb.create_sheet('2027기준선')
 put(ws, 1, 1, '2027 B2C 계획 초안 (EA) · 2026년 9·10월 실적 기준', FT)
 put(ws, 3, 1, '전체 추가율', FB); put(ws, 3, 3, 0, FBLUE, '0%', INP); put(ws, 3, 4, '← 1~6월 = 9·10월 평균 × (1 + 전체 추가율) × (1 + SKU 조정률). 10%를 넣으면 상반기·하반기 모두 10% 늘어납니다.', F)
 put(ws, 4, 1, '하반기 신장률', FB); put(ws, 4, 3, 0.2, FBLUE, '0%', INP); put(ws, 4, 4, '← 7~12월 = 상반기 같은 순서의 달(7월←1월 … 12월←6월) × (1 + 하반기 신장률). 상반기 대비 신장률입니다.', F)
-put(ws, 5, 1, '노란 칸만 고칩니다(전체 추가율, 하반기 신장률, SKU 조정률). 초록 글자는 월별 탭 실적을 끌어온 값이고 나머지는 수식입니다. 판매상품·세트만 넣었습니다.', F)
+put(ws, 5, 1, '노란 칸만 고칩니다(전체 추가율, 하반기 신장률, SKU 조정률). 초록 글자는 월별 탭 실적을 끌어온 값이고 나머지는 수식입니다. 판매상품·세트만 넣었습니다. 9·10월 실적은 SKU 이름으로 월별 탭에서 찾아옵니다(행 순서를 바꿔도 따라갑니다). 이름이 월별 탭과 다르면 그 행에 오류 표시(N/A)가 뜹니다.', F)
 M9, M10 = L(5 + 9), L(5 + 10)          # 월별 탭의 9월·10월 열
 first = {(x['name'], x['code']): x['first'] for x in P['diag']}
 plan = [r for r in P['rows'] if r['cat'] in ('판매상품', '세트') and (r['pm'][8] + r['pm'][9] > 0 or r['status'] == '신규')]
@@ -133,7 +133,8 @@ o10 = next(r for r in P['rows'] if r['code'] == '202927000001')
 for i, r in enumerate(plan):
     y = r0 + 1 + i; mr = row_m[(r['name'], r['code'])]; base = (r['pm'][8] + r['pm'][9]) / 2; f0 = first.get((r['name'], r['code']), '')
     for j, v in enumerate([r['cat'], r['name'], r['status']], 1): put(ws, y, j, v)
-    put(ws, y, 4, f"='월별'!{M9}{mr}", FGREEN, NUM); put(ws, y, 5, f"='월별'!{M10}{mr}", FGREEN, NUM)
+    # 행 번호가 아니라 SKU 이름으로 찾는다(존 2026-11-19: 탭에서 행 순서를 손으로 바꿔도 따라가게)
+    put(ws, y, 4, f"=INDEX('월별'!{M9}:{M9},MATCH($B{y},'월별'!$B:$B,0))", FGREEN, NUM); put(ws, y, 5, f"=INDEX('월별'!{M10}:{M10},MATCH($B{y},'월별'!$B:$B,0))", FGREEN, NUM)
     put(ws, y, 6, f'=AVERAGE(D{y}:E{y})', FB, NUM)
     put(ws, y, 7, -1 if (r['status'] == '종료' and base > 0) else 0, FBLUE, '0%', INP)
     for c in range(8, 14): put(ws, y, c, f'=ROUND($F{y}*(1+$C$3)*(1+$G{y}),0)', F, NUM)
