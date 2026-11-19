@@ -118,30 +118,58 @@ for i, s in enumerate(P['seasonSku']):
     put(ws, y0 + 1 + i, 1, s['name'])
     for j, v in enumerate(s['idx'], 2): put(ws, y0 + 1 + i, j, round(v, 2), F, '0.00')
 
-# ── 2027 기준선
+# ── 2027 계획 초안: 9·10월 실적 평균을 상반기 매달에 깔고, 하반기 = 상반기 × (1 + 신장률). 노란 칸만 고치면 전부 다시 계산된다
 ws = wb.create_sheet('2027기준선')
-put(ws, 1, 1, '2027 B2C 기준선 초안: 올해 수준이 그대로 반복된다고 볼 때의 월 물량 (EA)', FT)
-put(ws, 3, 1, '성장률', FB); put(ws, 3, 3, 0, FBLUE, '0%', INP); put(ws, 3, 4, '← 노란 칸에 내년 성장률을 넣으면 아래 [2027 기준선]이 바뀝니다. 12월 노란 칸은 12월 실적이 쌓이면 넣습니다.', F)
-put(ws, 4, 1, '글자색: 초록 = 월별 탭 실적을 끌어온 값, 파랑 = 추정해 넣은 값(고칠 수 있음). 종료된 SKU는 뺐습니다.', F)
-labels = ['구분', 'SKU', '상태', '넣은 방법'] + [f'{m}월' for m in range(1, 13)] + ['합계']
-B = P['base']; r0 = 7; r1 = r0 + len(B) + 4
-put(ws, r0 - 1, 1, '[기준 수량] 성장률을 곱하기 전', FB); head(ws, r0, labels, [9, 36, 7, 40] + [9] * 12 + [11])
-put(ws, r1 - 1, 1, '[2027 기준선] 기준 수량 × (1 + 성장률)', FB); head(ws, r1, labels)
-for i, b in enumerate(B):
-    ya, yb = r0 + 1 + i, r1 + 1 + i
-    for y in (ya, yb):
-        for j, v in enumerate([b['cat'], b['name'], b['status'], b['how']], 1): put(ws, y, j, v)
-    for m in range(1, 13):
-        c = 4 + m; v = b['vals'][m - 1]
-        if v is None: put(ws, ya, c, None, FBLUE, NUM, INP if (m == 12 or b['how'].startswith('이력')) else None)
-        elif b['status'] == '상시' and m <= 10: put(ws, ya, c, f"='월별'!{L(5 + m)}{row_m[(b['name'], b['code'])]}", FGREEN, NUM)
-        else: put(ws, ya, c, v, FBLUE, NUM)
-        put(ws, yb, c, f'=IF({L(c)}{ya}="","",ROUND({L(c)}{ya}*(1+$C$3),0))', F, NUM)
-    for y in (ya, yb): put(ws, y, 17, f'=SUM(E{y}:P{y})', FB, NUM)
-for base_row, n0 in ((r0, r0 + 1), (r1, r1 + 1)):
-    y = n0 + len(B); put(ws, y, 2, '합계', FB)
-    for c in range(5, 18): put(ws, y, c, f'=SUM({L(c)}{n0}:{L(c)}{y - 1})', FB, NUM, GRP)
-ws.freeze_panes = 'E8'
+put(ws, 1, 1, '2027 B2C 계획 초안 (EA) · 2026년 9·10월 실적 기준', FT)
+put(ws, 3, 1, '전체 추가율', FB); put(ws, 3, 3, 0, FBLUE, '0%', INP); put(ws, 3, 4, '← 1~6월 = 9·10월 평균 × (1 + 전체 추가율) × (1 + SKU 조정률). 10%를 넣으면 상반기·하반기 모두 10% 늘어납니다.', F)
+put(ws, 4, 1, '하반기 신장률', FB); put(ws, 4, 3, 0.2, FBLUE, '0%', INP); put(ws, 4, 4, '← 7~12월 = 상반기 같은 순서의 달(7월←1월 … 12월←6월) × (1 + 하반기 신장률). 상반기 대비 신장률입니다.', F)
+put(ws, 5, 1, '노란 칸만 고칩니다(전체 추가율, 하반기 신장률, SKU 조정률). 초록 글자는 월별 탭 실적을 끌어온 값이고 나머지는 수식입니다. 판매상품·세트만 넣었습니다.', F)
+M9, M10 = L(5 + 9), L(5 + 10)          # 월별 탭의 9월·10월 열
+first = {(x['name'], x['code']): x['first'] for x in P['diag']}
+plan = [r for r in P['rows'] if r['cat'] in ('판매상품', '세트') and (r['pm'][8] + r['pm'][9] > 0 or r['status'] == '신규')]
+hdr = ['구분', 'SKU', '상태', '9월 실적', '10월 실적', '9·10월 평균', 'SKU 조정률'] + [f'{m}월' for m in range(1, 13)] + ['상반기', '하반기', '연 합계', '비고']
+r0 = 7; head(ws, r0, hdr, [9, 36, 12, 10, 10, 11, 10] + [9] * 12 + [11, 11, 11, 70])
+o10 = next(r for r in P['rows'] if r['code'] == '202927000001')
+for i, r in enumerate(plan):
+    y = r0 + 1 + i; mr = row_m[(r['name'], r['code'])]; base = (r['pm'][8] + r['pm'][9]) / 2; f0 = first.get((r['name'], r['code']), '')
+    for j, v in enumerate([r['cat'], r['name'], r['status']], 1): put(ws, y, j, v)
+    put(ws, y, 4, f"='월별'!{M9}{mr}", FGREEN, NUM); put(ws, y, 5, f"='월별'!{M10}{mr}", FGREEN, NUM)
+    put(ws, y, 6, f'=AVERAGE(D{y}:E{y})', FB, NUM)
+    put(ws, y, 7, -1 if (r['status'] == '종료' and base > 0) else 0, FBLUE, '0%', INP)
+    for c in range(8, 14): put(ws, y, c, f'=ROUND($F{y}*(1+$C$3)*(1+$G{y}),0)', F, NUM)
+    for c in range(14, 20): put(ws, y, c, f'=ROUND({L(c - 6)}{y}*(1+$C$4),0)', F, NUM)
+    put(ws, y, 20, f'=SUM(H{y}:M{y})', FB, NUM); put(ws, y, 21, f'=SUM(N{y}:S{y})', FB, NUM); put(ws, y, 22, f'=T{y}+U{y}', FB, NUM)
+    note = ''
+    if r['code'] == '202927000001':
+        nov = F_['o10nov']; so = (r['pm'][8] + r['pm'][9]) / 61
+        note = f"11월 1~{P['mdays'][-1]}일은 하루 {nov:,.0f}개로 9·10월({so:,.0f}개)의 {nov / so * 100:.0f}%입니다. 가격 인상 뒤 수준으로 보려면 조정률을 내립니다."
+    elif r['status'] == '종료' and base > 0: note = '끝난 SKU라 조정률 -100%로 뺐습니다. 되살리려면 0%로 바꿉니다.'
+    elif base == 0: note = '11월 출시라 9·10월 실적이 없습니다. 계획하려면 9·10월 평균 칸에 숫자를 직접 넣습니다.'
+    elif f0 >= '2026-10-01': note = f"{md2(f0)} 출시. 10월이 한 달치가 아니라 평균이 낮게 잡힙니다."
+    elif f0 >= '2026-09-01': note = f"{md2(f0)} 출시. 9월이 한 달치가 아닙니다."
+    put(ws, y, 23, note, F)
+yt = r0 + 1 + len(plan); put(ws, yt, 2, f'합계 ({len(plan)}개 SKU)', FB)
+for c in range(1, 23): ws.cell(row=yt, column=c).fill = GRP
+for c in [4, 5, 6] + list(range(8, 23)): put(ws, yt, c, f'=SUM({L(c)}{r0 + 1}:{L(c)}{yt - 1})', FB, NUM, GRP)
+# 점검: 올해 실적과 견줘 본 크기 (판매상품·세트, 월별 탭 합계)
+def msum(m): c = L(5 + m); return f"SUMIF('월별'!$A$6:$A$200,\"판매상품\",'월별'!{c}$6:{c}$200)+SUMIF('월별'!$A$6:$A$200,\"세트\",'월별'!{c}$6:{c}$200)"
+yc = yt + 3
+put(ws, yc - 1, 1, '[점검] 올해 실적과 견줘 본 크기 (판매상품·세트)', FB)
+head(ws, yc, ['', '항목', '', '값', '올해 대비'])
+chk = [
+    ('2026 1~6월 월평균 (실적, 1~4월은 추정 포함)', '=(' + '+'.join(msum(m) for m in range(1, 7)) + ')/6', None, ''),
+    ('2026 7~10월 월평균 (실적)', '=(' + '+'.join(msum(m) for m in range(7, 11)) + ')/4', None, ''),
+    ('2026 1~10월 월평균 (실적)', '=(' + '+'.join(msum(m) for m in range(1, 11)) + ')/10', None, ''),
+    ('2026 9·10월 평균 (이 초안의 기준, 끝난 SKU 포함)', f'=({msum(9)}+{msum(10)})/2', None, ''),
+    ('2027 상반기 월 계획', f'=H{yt}', f'=D{yc + 5}/D{yc + 1}-1', '← 2026 1~6월 월평균 대비'),
+    ('2027 하반기 월 계획', f'=N{yt}', f'=D{yc + 6}/D{yc + 2}-1', '← 2026 7~10월 월평균 대비'),
+    ('2027 연 합계', f'=V{yt}', f'=D{yc + 7}/(D{yc + 3}*12)-1', '← 2026 1~10월 월평균 × 12 대비 (11·12월 실적이 없어 연 환산)'),
+]
+for i, (lab, f, g, n) in enumerate(chk):
+    y = yc + 1 + i; put(ws, y, 2, lab); put(ws, y, 4, f, FGREEN if i < 4 else F, NUM)
+    if g: put(ws, y, 5, g, FB, '+0%;-0%;0%'); put(ws, y, 6, n, F)
+put(ws, yc + 9, 1, '매달 같은 값을 넣었습니다. 월 일수 차이(2월 28일)와 계절·행사는 반영하지 않았습니다. 9·10월에는 추석(9/25)과 행사 주 4번(W36·W37·W38·W42)이 들어 있습니다.', F)
+ws.freeze_panes = ws.cell(row=r0 + 1, column=4)
 
 # ── 채널별 월 (주문 기준)
 ws = wb.create_sheet('채널별_월')
@@ -165,13 +193,13 @@ lines = [
     (f"2. SKU {F_['aN']}개가 물량의 {F_['aShare'] * 100:.0f}%입니다. 오리지널(10개입) 하나가 {P['diag'][0]['share'] * 100:.0f}%입니다. → [SKU진단]", F),
     (f"3. 늘고 있는 것은 오리지널(5개입)입니다. 최근 13주 평시가 주 {d5['r13']:,.0f}개로 그 전({d5['prior']:,.0f}개)보다 {d5['trend'] * 100:+.0f}%입니다. 오리지널(10개입)은 제자리입니다.", F),
     (f"4. 11월 1~{P['mdays'][-1]}일 오리지널(10개입)은 하루 {F_['o10nov']:,.0f}개로 10월({F_['o10oct']:,.0f}개)의 {F_['o10nov'] / F_['o10oct'] * 100:.0f}%입니다. 10/28~31 '감자빵 인상 전 앵콜 특가' 직후입니다. 가격 인상 영향인지 당겨 산 반동인지는 {P['mdays'][-1]}일치로 가릴 수 없습니다.", F),
-    (f"5. 올해 새로 나간 SKU {F_['newN']}개가 {F_['newShare'] * 100:.0f}%, 끝난 SKU {F_['endN']}개가 {F_['endShare'] * 100:.0f}%입니다. 내년 기준선에서 끝난 SKU는 뺐습니다. → [2027기준선]", F),
+    (f"5. 올해 새로 나간 SKU {F_['newN']}개가 {F_['newShare'] * 100:.0f}%, 끝난 SKU {F_['endN']}개가 {F_['endShare'] * 100:.0f}%입니다. → [SKU진단]", F),
     (f"6. 일평균은 4월이 가장 높고({P['season'][3]['avg']:,.0f}개) 1월이 가장 낮습니다({P['season'][0]['avg']:,.0f}개). 1년치뿐이라 계절 탓인지 성장 탓인지는 구분하지 못합니다. → [계절지수]", F), ('', F),
     ('탭 안내', FB),
     ('월별 / 주차별: SKU별 실적. 월은 달력 월(날짜 기준)이라 월 경계에 걸친 주는 날짜대로 나뉩니다. 주차별 2행에 그 주가 속한 달을 적었습니다.', F),
     ('SKU진단: 상태(상시·신규·종료), 등급, 평시 주 물량, 행사 주 수, 추세.', F),
     ('행사주: 물량이 평시의 1.5배를 넘은 주와 그 주에 늘어난 SKU·채널·프로모션 캘린더 행사.', F),
-    ('2027기준선: 올해 수준 반복 가정의 월 물량. 성장률 칸 하나로 조정합니다.', F),
+    ('2027기준선: 9·10월 실적 평균을 상반기 매달에 깔고 하반기는 상반기 × (1 + 신장률)로 둔 계획 초안. 노란 칸(전체 추가율·하반기 신장률·SKU 조정률)을 고치면 전부 다시 계산됩니다.', F),
     ('채널별_월: 채널별 월 수량(주문 기준).', F), ('', F),
     ('숫자의 기준과 한계', FB),
     (f"택배 = 송장이 있는 출고 + 홈쇼핑 직택배. {A_} 이후는 출고완료일·상품코드 기준(아워박스 출고실적, /inven 화면과 같은 규칙).", F),
