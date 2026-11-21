@@ -1,10 +1,10 @@
 {
  "status": "ok",
- "generated_at": "2026-11-21 07:34:45",
+ "generated_at": "2026-11-22 07:34:36",
  "source": "ourbox-openapi",
- "api_calls": 80,
+ "api_calls": 76,
  "fetched_days": 9,
- "elapsed_ms": 70098,
+ "elapsed_ms": 70716,
  "config": {
   "leadTimeDays": 7,
   "reviewDays": 7,
@@ -79,8 +79,8 @@
     ]
    },
    "usage": {
-    "boxes": 7957,
-    "adjusted": 7957,
+    "boxes": 7969,
+    "adjusted": 7969,
     "since": "2026-10-06",
     "unknownShare": 0,
     "substituted": 0,
@@ -88,8 +88,8 @@
     "anchorDayRaw": 239,
     "alreadyDeducted": 219
    },
-   "est": 5577,
-   "rawEst": 5577,
+   "est": 5565,
+   "rawEst": 5565,
    "apiStock": {
     "total": 15752,
     "available": 15752,
@@ -144,13 +144,14 @@
     "2026-11-18": 5754,
     "2026-11-19": 5659,
     "2026-11-20": 5580,
-    "2026-11-21": 5577
+    "2026-11-21": 5565,
+    "2026-11-22": 5565
    },
-   "weekAvg": 687,
+   "weekAvg": 690,
    "weekMax8": 3077,
-   "target": 1649,
+   "target": 1656,
    "orderQty": 0,
-   "daysCover": 56.8,
+   "daysCover": 56.5,
    "warnings": [],
    "receiptsDaily": {
     "2026-10-16": 2016,
@@ -232,14 +233,14 @@
     ]
    },
    "usage": {
-    "boxes": 5960,
-    "adjusted": 5960,
+    "boxes": 5970,
+    "adjusted": 5970,
     "since": "2026-09-18",
     "unknownShare": 0,
     "substituted": 0
    },
-   "est": 2062,
-   "rawEst": 2062,
+   "est": 2052,
+   "rawEst": 2052,
    "apiStock": {
     "total": 8882,
     "available": 8882,
@@ -247,11 +248,11 @@
     "expected": 8882,
     "diff": 0
    },
-   "weekAvg": 636,
+   "weekAvg": 638,
    "weekMax8": 1262,
-   "target": 1526,
+   "target": 1531,
    "orderQty": 0,
-   "daysCover": 22.7,
+   "daysCover": 22.5,
    "warnings": [
     "조정 이력 af_qty 합 0 ≠ 장부 역산 2,482 — 장부 역산 값을 사용"
    ],
@@ -348,8 +349,8 @@
   }
  ],
  "coverage": {
-  "lookup": 89.1,
-  "qty": 10.9,
+  "lookup": 89,
+  "qty": 11,
   "unknown": 0,
   "unknownSigs": [
    "G-O025x1|G-O082x1|G-O083x1|G-O084x1|G-O094x1|G-O095x1|G-O128x1|G-O163x10 ×1",
@@ -360,22 +361,6 @@
   ]
  },
  "weekly": [
-  {
-   "weekStart": "2026-09-27",
-   "weekEnd": "2026-10-03",
-   "days": 7,
-   "invoices": 2756,
-   "unknown": 0,
-   "b1": 1176,
-   "b2": 482,
-   "b3": 53,
-   "b4": 1017,
-   "gift": 28,
-   "paper": 0,
-   "plain": 0,
-   "other": 0,
-   "partial": false
-  },
   {
    "weekStart": "2026-10-04",
    "weekEnd": "2026-10-10",
@@ -476,41 +461,36 @@
    "weekStart": "2026-11-15",
    "weekEnd": "2026-11-21",
    "days": 7,
-   "invoices": 1281,
+   "invoices": 1309,
    "unknown": 5,
-   "b1": 525,
-   "b2": 509,
+   "b1": 537,
+   "b2": 519,
    "b3": 44,
-   "b4": 183,
+   "b4": 189,
    "gift": 15,
    "paper": 0,
    "plain": 0,
    "other": 0,
    "partial": false
-  }
- ],
- "daily": [
+  },
   {
-   "date": "2026-10-11",
-   "invoices": 102,
-   "lines": 130,
-   "noInvoiceGroups": 0,
-   "noInvoiceQty": 0,
+   "weekStart": "2026-11-22",
+   "weekEnd": "2026-11-28",
+   "days": 1,
+   "invoices": 0,
    "unknown": 0,
-   "byLookup": 102,
-   "byQty": 0,
-   "unknownSigs": [],
-   "b2b": [],
-   "b1": 53,
-   "b2": 12,
-   "b3": 3,
-   "b4": 32,
-   "gift": 2,
+   "b1": 0,
+   "b2": 0,
+   "b3": 0,
+   "b4": 0,
+   "gift": 0,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-10-28 15:55:57"
-  },
+   "partial": true
+  }
+ ],
+ "daily": [
   {
    "date": "2026-10-12",
    "invoices": 684,
@@ -2477,28 +2457,49 @@
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-21 07:34:45"
+   "fetchedAt": "2026-11-22 07:34:36"
   },
   {
    "date": "2026-11-21",
-   "invoices": 24,
-   "lines": 42,
+   "invoices": 52,
+   "lines": 84,
    "noInvoiceGroups": 0,
    "noInvoiceQty": 0,
    "unknown": 0,
-   "byLookup": 15,
-   "byQty": 9,
+   "byLookup": 37,
+   "byQty": 15,
    "unknownSigs": [],
    "b2b": [],
-   "b1": 10,
-   "b2": 9,
+   "b1": 22,
+   "b2": 19,
    "b3": 0,
-   "b4": 4,
+   "b4": 10,
    "gift": 1,
    "paper": 0,
    "plain": 0,
    "other": 0,
-   "fetchedAt": "2026-11-21 07:34:45"
+   "fetchedAt": "2026-11-22 07:34:36"
+  },
+  {
+   "date": "2026-11-22",
+   "invoices": 0,
+   "lines": 0,
+   "noInvoiceGroups": 0,
+   "noInvoiceQty": 0,
+   "unknown": 0,
+   "byLookup": 0,
+   "byQty": 0,
+   "unknownSigs": [],
+   "b2b": [],
+   "b1": 0,
+   "b2": 0,
+   "b3": 0,
+   "b4": 0,
+   "gift": 0,
+   "paper": 0,
+   "plain": 0,
+   "other": 0,
+   "fetchedAt": "2026-11-22 07:34:36"
   }
  ],
  "warnings": []
